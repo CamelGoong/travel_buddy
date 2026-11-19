@@ -4,5 +4,6 @@
 
 - [ui-composition](ui-composition.md) — Read when choosing UI components, page composition, visual tokens, or custom interface boundaries.
 - [route-line](route-line.md) — Read when building or changing the trip progress line at the top of the app.
+- [suggestion-nudge](suggestion-nudge.md) — Read when showing anything the service brings up on its own (briefings, directions, nearby spots, prompts).
 - [data-storage](data-storage.md) — Read when storing user data, adding login, or deciding where trip data lives.
 - [dependency-versions](dependency-versions.md) — Read when upgrading dependencies, pinning versions, or wondering why TypeScript stays on 6.x.
