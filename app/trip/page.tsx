@@ -9,7 +9,7 @@ import { FieldGroup } from "@/components/ui/field";
 import { formatKoreanDate } from "@/lib/tokyo-time";
 import { LogoutButton } from "@/features/auth";
 import { getChecklist } from "@/features/checklist";
-import { getSpentByDay } from "@/features/expenses";
+import { getSpentByDay } from "@/features/expenses/server";
 import { RouteLine, tripStage } from "@/features/route-line";
 import { buildCourse } from "@/features/trip";
 

@@ -12,7 +12,8 @@ import { formatKoreanDate } from "@/lib/tokyo-time";
 import { LogoutButton } from "@/features/auth";
 import { getChecklist } from "@/features/checklist";
 import { allowanceForDay } from "@/features/budget";
-import { formatYen, getDayExpenses, getSpentByDay } from "@/features/expenses";
+import { formatYen } from "@/features/expenses";
+import { getDayExpenses, getSpentByDay } from "@/features/expenses/server";
 import { dayStage, RouteLine } from "@/features/route-line";
 import { dateOfDay, placesForDay } from "@/features/trip";
 

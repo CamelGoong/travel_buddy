@@ -2,7 +2,8 @@
 
 import { refresh } from "next/cache";
 
-import { insertExpense, parseExpense } from "@/features/expenses";
+import { parseExpense } from "@/features/expenses";
+import { insertExpense } from "@/features/expenses/server";
 
 export type ExpenseFormState = { error: string | null; amount: string; label: string; saved: number };
 
