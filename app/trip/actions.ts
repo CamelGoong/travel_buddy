@@ -15,7 +15,7 @@ import { parseExpense } from "@/features/expenses";
 import { insertExpense } from "@/features/expenses/server";
 import type { SuggestionKind } from "@/features/suggestions";
 import { recordSuggestion } from "@/features/suggestions/server";
-import { dayNumberOn, getLatestTrip, setTripBudget } from "@/features/trip";
+import { dayNumberOn, getCurrentTrip, setTripBudget } from "@/features/trip";
 
 import type { ExpenseFormState } from "./day/[day]/actions";
 
@@ -49,7 +49,7 @@ export async function togglePrepItem(
 
 /** The user acted on or put off a suggestion; it will not come back in the same situation. */
 export async function resolveSuggestion(kind: SuggestionKind, context: string) {
-  const trip = await getLatestTrip();
+  const trip = await getCurrentTrip();
   if (!trip) return;
   const now = await getTokyoNow();
   await recordSuggestion(trip.id, kind, context, now.date, `${now.date}T${now.time}`);
@@ -66,7 +66,7 @@ export async function recordExpenseFromPrompt(
   const parsed = parseExpense(amount, label);
   if (!parsed.ok) return { error: parsed.error, amount, label, saved: prev.saved };
 
-  const trip = await getLatestTrip();
+  const trip = await getCurrentTrip();
   const now = await getTokyoNow();
   const day = trip ? dayNumberOn(trip, now.date) : null;
   if (!trip || !day) {
@@ -87,7 +87,7 @@ export type BudgetFormState = { error: string | null; value: string };
 /** Sets the trip's total budget, or clears it when the clear button sent the form. */
 export async function saveBudget(_prev: BudgetFormState, formData: FormData): Promise<BudgetFormState> {
   const raw = String(formData.get("budget") ?? "");
-  const trip = await getLatestTrip();
+  const trip = await getCurrentTrip();
   if (!trip) return { error: "여행을 찾지 못했어요.", value: raw };
 
   if (formData.get("intent") === "clear") {

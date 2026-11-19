@@ -11,5 +11,5 @@ export {
   type TripDates,
 } from "./trip-days";
 export { validateTripDates } from "./validate";
-export { getLatestTrip, type Trip, type CourseSource } from "./queries";
+export { CURRENT_TRIP_COOKIE, getCurrentTrip, listTrips, type Trip, type CourseSource } from "./queries";
 export { countTripsCreatedSince, insertTrip, setTripBudget, type NewTrip } from "./mutations";

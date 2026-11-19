@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { AppShell, PageHeader } from "@/components/app-shell";
+import { AppShell, HomeLink, PageHeader } from "@/components/app-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTokyoNow } from "@/lib/clock";
 import { getUserId } from "@/lib/supabase/server";
@@ -14,6 +14,7 @@ export default async function NewTripPage() {
 
   return (
     <AppShell header={<PageHeader eyebrow="Travel Buddy" title="여행 만들기" action={<LogoutButton />} />}>
+      <HomeLink className="-ml-2 w-fit" />
       <Card>
         <CardHeader>
           <CardTitle>언제 떠나요?</CardTitle>

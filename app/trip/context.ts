@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getTokyoNow, weatherForcedToFail } from "@/lib/clock";
 import { getUserId } from "@/lib/supabase/server";
 import { addDays } from "@/lib/tokyo-time";
-import { dayCount, dayNumberOn, getLatestTrip } from "@/features/trip";
+import { dayCount, dayNumberOn, getCurrentTrip } from "@/features/trip";
 import { fetchOsakaForecast } from "@/features/weather";
 
 export type TripContext = Awaited<ReturnType<typeof loadTripContext>>;
@@ -13,7 +13,7 @@ export async function loadTripContext(nextPath = "/trip") {
   const userId = await getUserId();
   if (!userId) redirect(`/auth/login?next=${encodeURIComponent(nextPath)}`);
 
-  const trip = await getLatestTrip();
+  const trip = await getCurrentTrip();
   if (!trip) redirect("/trip/new");
 
   const now = await getTokyoNow();
