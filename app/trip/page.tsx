@@ -11,6 +11,7 @@ import { LogoutButton } from "@/features/auth";
 import { getChecklist, getPendingSuggestions } from "@/features/checklist";
 import { getVault } from "@/features/documents/store";
 import { getMembers } from "@/features/members/server";
+import { getFxSnapshot } from "@/features/fx/server";
 import { getSpentByDay } from "@/features/expenses/server";
 import { RouteLine, tripStage } from "@/features/route-line";
 import { buildCourse } from "@/features/trip";
@@ -30,12 +31,13 @@ export default async function TripPage() {
   const ctx = await loadTripContext();
   const { trip, now, days, todayDay } = ctx;
 
-  const [checklist, pending, spentByDay, vault, members] = await Promise.all([
+  const [checklist, pending, spentByDay, vault, members, fx] = await Promise.all([
     getChecklist(trip.id),
     getPendingSuggestions(trip.id),
     getSpentByDay(trip.id),
     getVault(trip.id),
     getMembers(trip.id),
+    getFxSnapshot(),
   ]);
   const filledSlots = vault.filter((slot) => slot.files.length > 0).length;
   const budget = summarizeBudget({
@@ -126,7 +128,7 @@ export default async function TripPage() {
         members={members.map((m) => ({ id: m.id, nickname: m.nickname, role: m.role, isMe: m.isMe }))}
       />
 
-      <BudgetCard summary={budget} canEdit={trip.isOwner} />
+      <BudgetCard summary={budget} canEdit={trip.isOwner} rate={fx?.rate ?? null} />
 
       <section className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">

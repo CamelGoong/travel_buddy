@@ -13,6 +13,14 @@ import {
   type Suggestion,
 } from "@/features/suggestions";
 import { formatYen } from "@/features/expenses";
+import { formatDiffPct, formatHundredYen, FX_DISCLAIMER } from "@/features/fx";
+import {
+  COUPON_KEYWORD,
+  mrtSearchUrl,
+  PASS_KEYWORD,
+  ticketKeyword,
+  TRANSPORT_KEYWORD,
+} from "@/features/purchase";
 import { skyLabel, WeatherSummary } from "@/features/weather";
 
 import { recordExpenseFromPrompt, resolveSuggestion, togglePrepItem } from "./actions";
@@ -50,14 +58,15 @@ export function SuggestionIsland({ data }: { data: IslandData }) {
         budgetAheadOfPace: data.budget?.aheadOfPace ?? false,
         flightDocsToday: data.flightFiles.length > 0,
         ticketPlaceNames: new Set(data.tickets.map((t) => t.placeName)),
+        preTrip: data.preTrip,
       }),
     [data, location, permission],
   );
 
   const resolve = useCallback(
-    (s: Suggestion) => {
+    (s: Suggestion, opened = false) => {
       setClosed(true);
-      void resolveSuggestion(s.kind, s.context);
+      void resolveSuggestion(s.kind, s.context, opened);
     },
     [],
   );
@@ -252,6 +261,60 @@ export function SuggestionIsland({ data }: { data: IslandData }) {
       );
       break;
     }
+    case "buy_pass":
+    case "buy_transport":
+    case "buy_ticket":
+    case "buy_coupon": {
+      const keyword =
+        suggestion.kind === "buy_pass"
+          ? PASS_KEYWORD
+          : suggestion.kind === "buy_transport"
+            ? TRANSPORT_KEYWORD
+            : suggestion.kind === "buy_ticket"
+              ? ticketKeyword(suggestion.context)
+              : COUPON_KEYWORD;
+      body = (
+        <>
+          <p className="text-sm text-muted-foreground">
+            마이리얼트립에서 <span className="font-medium text-foreground">&quot;{keyword}&quot;</span> 검색 결과를 열어
+            드려요. 구매는 거기서 직접 해요.
+          </p>
+          <Actions>
+            {later()}
+            <Button
+              size="sm"
+              onClick={() => {
+                window.open(mrtSearchUrl(keyword), "_blank", "noopener");
+                resolve(suggestion, true);
+              }}
+            >
+              찾아볼게요
+            </Button>
+          </Actions>
+        </>
+      );
+      break;
+    }
+    case "fx": {
+      const f = data.fx;
+      body = f ? (
+        <>
+          <p className="font-heading text-lg font-semibold" data-testid="fx-rate">
+            {formatHundredYen(f.rate)}
+          </p>
+          <p className="text-sm">
+            최근 30일 평균보다 {formatDiffPct(f.diffPct)}. {f.judgment}
+          </p>
+          <p className="text-xs text-muted-foreground">{FX_DISCLAIMER}</p>
+          <Actions>
+            <Button size="sm" onClick={() => resolve(suggestion)}>
+              알겠어요
+            </Button>
+          </Actions>
+        </>
+      ) : null;
+      break;
+    }
     case "location": {
       body = (
         <>
@@ -351,6 +414,18 @@ function describe(s: Suggestion, data: IslandData): { line: string; meta: string
       return { line: "오늘 비행기 타는 날! 항공권 꺼내 둘까요?", meta: "✈️ 항공권" };
     case "ticket":
       return { line: `${s.place.name} 도착! 입장권 보여 줄까요?`, meta: "🎟️ 입장권" };
+    case "buy_pass":
+      return { line: "교통패스는 미리 사 두면 편해요. 찾아볼까요?", meta: "🎫 패스" };
+    case "buy_transport":
+      return { line: "공항에서 시내 가는 교통권도 미리 챙겨 둘까요?", meta: "🚆 교통권" };
+    case "buy_ticket":
+      return { line: `${s.context} 입장권 찾아볼까요?`, meta: "🎟️ 입장권" };
+    case "buy_coupon":
+      return { line: "여행 전에 할인권 챙겨 볼까요?", meta: "🏷️ 할인" };
+    case "fx":
+      return data.fx
+        ? { line: "환전은 했나요? 지금 환율 볼까요?", meta: `💴 ${formatHundredYen(data.fx.rate)}` }
+        : null;
     case "location":
       return { line: "근처 추천을 받으려면 위치가 필요해요. 켜 볼까요?", meta: "📍" };
   }

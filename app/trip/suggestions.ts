@@ -1,10 +1,14 @@
 import { getDevLocation, type DevLocation } from "@/lib/clock";
+import { daysBetween } from "@/lib/tokyo-time";
 import { buildPrepItems, getPrepChecks, type PrepItem } from "@/features/briefing";
 import type { ChecklistItem } from "@/features/checklist";
 import { getSharedFiles, getVault } from "@/features/documents/store";
+import { getFxSnapshot } from "@/features/fx/server";
+import { fxJudgment, fxTone, type FxSnapshot } from "@/features/fx";
+import { inNudgeWindow, ticketsStillNeeded } from "@/features/purchase";
 import { EVENING_FROM, type Spot, type TimedPlace } from "@/features/suggestions";
 import { getSuggestionRecords } from "@/features/suggestions/server";
-import { OSAKA_SPOTS, placesOfDay, type Place } from "@/features/trip";
+import { buildCourse, OSAKA_SPOTS, placesOfDay, type Place } from "@/features/trip";
 import { outfitLine, type DailyForecast } from "@/features/weather";
 
 import type { BudgetSummary } from "./budget";
@@ -30,6 +34,10 @@ export type IslandData = {
   flightFiles: LinkedFile[];
   /** Entry tickets linked to today's places */
   tickets: { placeName: string; files: LinkedFile[] }[];
+  /** Before-trip nudges, only on the trip screen in the 14 days before departure */
+  preTrip: { passPending: boolean; ticketPlaces: string[]; fxReady: boolean } | null;
+  /** Exchange rate details for the fx nudge */
+  fx: { rate: number; diffPct: number; judgment: string } | null;
 };
 
 export type LinkedFile = { id: number; fileName: string };
@@ -47,6 +55,30 @@ export async function loadIslandData(
     getDevLocation(),
   ]);
   const resolved = new Set(records.resolvedToday);
+
+  // Before-trip nudges: only on the trip screen, 14 days before departure up to the day before.
+  const daysUntilStart = daysBetween(now.date, trip.startDate);
+  const preWindow = dayScreen === null && todayDay === null && inNudgeWindow(daysUntilStart);
+  let preTrip: IslandData["preTrip"] = null;
+  let fx: IslandData["fx"] = null;
+  if (preWindow) {
+    const [myVault, sharedFiles, snapshot] = await Promise.all([
+      getVault(trip.id),
+      getSharedFiles(trip.id),
+      getFxSnapshot(),
+    ]);
+    const linked = new Set<string>(
+      [...(myVault.find((slot) => slot.kind === "ticket")?.files ?? []), ...sharedFiles.filter((f) => f.slotKind === "ticket")]
+        .map((f) => f.placeName)
+        .filter((name): name is string => !!name),
+    );
+    const courseNames = buildCourse(trip).flatMap((day) => day.places.map((p) => p.name));
+    const currencyDone = checklist.find((item) => item.key === "currency")?.done ?? true;
+    const passDone = checklist.find((item) => item.key === "transit-pass")?.done ?? true;
+    const fxReady = !currencyDone && snapshot !== null;
+    preTrip = { passPending: !passDone, ticketPlaces: ticketsStillNeeded(courseNames, linked), fxReady };
+    if (fxReady && snapshot) fx = fxView(snapshot);
+  }
 
   const [vault, shared] = todayDay !== null
     ? await Promise.all([getVault(trip.id), getSharedFiles(trip.id)])
@@ -93,6 +125,8 @@ export async function loadIslandData(
     lastNearbyAt: records.lastNearbyAt,
     devLocation,
     budget,
+    preTrip,
+    fx,
     flightFiles,
     tickets,
     morning:
@@ -118,4 +152,8 @@ export async function loadIslandData(
           }
         : null,
   };
+}
+
+function fxView(snapshot: FxSnapshot): NonNullable<IslandData["fx"]> {
+  return { rate: snapshot.rate, diffPct: snapshot.diffPct, judgment: fxJudgment(fxTone(snapshot.diffPct)) };
 }

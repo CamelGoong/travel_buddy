@@ -21,6 +21,8 @@ import {
   type ExpenseCategory,
 } from "@/features/expenses";
 import { getMembers } from "@/features/members/server";
+import { getFxSnapshot } from "@/features/fx/server";
+import { Won } from "@/components/won";
 import { getDayExpenses, getSpentByDay } from "@/features/expenses/server";
 import { dayStage, RouteLine } from "@/features/route-line";
 import { dateOfDay, OSAKA_SPOTS, placesOfDay } from "@/features/trip";
@@ -49,11 +51,12 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
   const date = dateOfDay(trip, dayNumber);
   const places = placesOfDay(trip, dayNumber);
   const model = dayStage({ dayNumber, dayDate: date, today: now.date, nowTime: now.time, places });
-  const [expenses, checklist, spentByDay, members] = await Promise.all([
+  const [expenses, checklist, spentByDay, members, fx] = await Promise.all([
     getDayExpenses(trip.id, dayNumber),
     getChecklist(trip.id),
     getSpentByDay(trip.id),
     getMembers(trip.id),
+    getFxSnapshot(),
   ]);
   const me = members.find((m) => m.isMe);
   const shown = filterExpenses(expenses, { memberId: personFilter, category: categoryFilter });
@@ -164,11 +167,13 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
           <CardTitle>이날 여비</CardTitle>
           <CardDescription>
             합계 <span className="font-heading text-lg font-semibold text-foreground" data-testid="day-total">{formatYen(total)}</span>
+            <Won yen={total} rate={fx?.rate} />
             {dayAllowance && (
               <span className="ml-2" data-testid="day-allowance">
                 {dayAllowance.kind === "allowance"
                   ? `· 이날 권장 ${formatYen(dayAllowance.yen)}`
                   : `· 예산을 ${formatYen(dayAllowance.yen)} 넘었어요`}
+                <Won yen={dayAllowance.yen} rate={fx?.rate} />
               </span>
             )}
           </CardDescription>
@@ -211,7 +216,10 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
                   <li key={e.id} className="flex flex-col gap-1">
                     <div className="flex justify-between gap-3">
                       <span>{e.label}</span>
-                      <span className="tabular-nums">{formatYen(e.amountYen)}</span>
+                      <span className="tabular-nums">
+                        {formatYen(e.amountYen)}
+                        <Won yen={e.amountYen} rate={fx?.rate} />
+                      </span>
                     </div>
                     <p className="flex flex-wrap gap-1 text-xs text-muted-foreground">
                       {e.people.map((p) => (

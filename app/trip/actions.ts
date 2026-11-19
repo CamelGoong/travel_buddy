@@ -76,11 +76,12 @@ export async function togglePrepItem(
 }
 
 /** The user acted on or put off a suggestion; it will not come back in the same situation. */
-export async function resolveSuggestion(kind: SuggestionKind, context: string) {
+export async function resolveSuggestion(kind: SuggestionKind, context: string, opened = false) {
   const trip = await getCurrentTrip();
   if (!trip) return;
   const now = await getTokyoNow();
-  await recordSuggestion(trip.id, kind, context, now.date, `${now.date}T${now.time}`);
+  // An opened recommendation ("!" suffix) is finished for good; a put-off one only for today.
+  await recordSuggestion(trip.id, kind, opened ? `${context}!` : context, now.date, `${now.date}T${now.time}`);
 }
 
 /** Records today's expense from the meal prompt and closes that prompt. */

@@ -6,6 +6,7 @@ export const DEV_NOW_COOKIE = "tb-dev-now";
 export const DEV_WEATHER_COOKIE = "tb-dev-weather";
 export const DEV_LOC_COOKIE = "tb-dev-loc";
 export const DEV_PERM_COOKIE = "tb-dev-perm";
+export const DEV_FX_COOKIE = "tb-dev-fx";
 
 export const devSimulationEnabled = process.env.NODE_ENV === "development";
 
@@ -27,6 +28,12 @@ export async function getTokyoNow(): Promise<LocalNow & { simulated: boolean }> 
 export async function weatherForcedToFail(): Promise<boolean> {
   if (!devSimulationEnabled) return false;
   return (await cookies()).get(DEV_WEATHER_COOKIE)?.value === "fail";
+}
+
+/** Development-only switch that makes the exchange rate lookup fail. */
+export async function fxForcedToFail(): Promise<boolean> {
+  if (!devSimulationEnabled) return false;
+  return (await cookies()).get(DEV_FX_COOKIE)?.value === "fail";
 }
 
 export type DevLocation = {

@@ -1,5 +1,7 @@
 "use client";
 
+import { Won } from "@/components/won";
+import { formatWonApprox } from "@/features/fx";
 import { useActionState, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -11,7 +13,16 @@ import { formatYen } from "@/features/expenses";
 import { saveBudget, type BudgetFormState } from "./actions";
 import type { BudgetSummary } from "./budget";
 
-export function BudgetCard({ summary, canEdit = true }: { summary: BudgetSummary | null; canEdit?: boolean }) {
+export function BudgetCard({
+  summary,
+  canEdit = true,
+  rate = null,
+}: {
+  summary: BudgetSummary | null;
+  canEdit?: boolean;
+  /** Won per yen for the reference amounts; null hides them */
+  rate?: number | null;
+}) {
   const [editing, setEditing] = useState(canEdit && summary === null);
   const [state, formAction, pending] = useActionState<BudgetFormState, FormData>(
     async (prev, formData) => {
@@ -27,7 +38,14 @@ export function BudgetCard({ summary, canEdit = true }: { summary: BudgetSummary
       <CardHeader>
         <CardTitle>예산</CardTitle>
         <CardDescription>
-          {summary ? `총 ${formatYen(summary.budgetYen)}` : "여행 전체에 쓸 돈을 정하면 하루 권장액을 알려 드려요."}
+          {summary ? (
+            <>
+              총 {formatYen(summary.budgetYen)}
+              <Won yen={summary.budgetYen} rate={rate} />
+            </>
+          ) : (
+            "여행 전체에 쓸 돈을 정하면 하루 권장액을 알려 드려요."
+          )}
         </CardDescription>
         {canEdit && summary && !editing && (
           <CardAction>
@@ -40,12 +58,17 @@ export function BudgetCard({ summary, canEdit = true }: { summary: BudgetSummary
       <CardContent className="flex flex-col gap-4">
         {summary && (
           <dl className="grid grid-cols-3 gap-2 text-center">
-            <Stat label="쓴 돈" value={formatYen(summary.spent)} />
+            <Stat label="쓴 돈" value={formatYen(summary.spent)} won={rate ? formatWonApprox(summary.spent, rate) : null} />
             <Stat
               label="남은 돈"
               value={summary.remaining >= 0 ? formatYen(summary.remaining) : `−${formatYen(-summary.remaining)}`}
+              won={rate ? formatWonApprox(Math.abs(summary.remaining), rate) : null}
             />
-            <Stat label={todayLabel(summary)} value={todayValue(summary)} />
+            <Stat
+              label={todayLabel(summary)}
+              value={todayValue(summary)}
+              won={rate && "yen" in summary.today ? formatWonApprox(summary.today.yen, rate) : null}
+            />
           </dl>
         )}
         {canEdit && editing && (
@@ -98,11 +121,12 @@ function todayValue(s: BudgetSummary) {
   }
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, won }: { label: string; value: string; won: string | null }) {
   return (
     <div className="rounded-lg bg-muted px-2 py-3">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="font-heading text-sm font-semibold tabular-nums">{value}</dd>
+      {won && <dd className="text-[10px] text-muted-foreground tabular-nums">{won}</dd>}
     </div>
   );
 }
