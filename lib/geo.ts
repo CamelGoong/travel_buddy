@@ -46,3 +46,11 @@ export function mapsDirectionsUrl(
   url.searchParams.set("travelmode", mode);
   return url.toString();
 }
+
+/** Google Maps search for a place name (with "오사카" to keep results local); no API key needed. */
+export function mapsSearchUrl(placeName: string): string {
+  const url = new URL("https://www.google.com/maps/search/");
+  url.searchParams.set("api", "1");
+  url.searchParams.set("query", `${placeName.trim()} 오사카`);
+  return url.toString();
+}
