@@ -32,6 +32,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - `skills update`는 복사 방식을 보존하지 않으므로 사용하지 않는다. `update --copy`도 대안으로 사용하지 않는다.
 - 이 정책은 업데이트된 `update-project-skills` 본문이 symlink를 요구하더라도 우선한다. 스킬을 직접 수정할 때도 두 복사본을 함께 반영하고, 완료 시 symlink가 없는지와 두 복사본의 파일 내용이 같은지 확인한다.
 
+# 화면 작업
+
+- Work that builds or reviews screens reads `DESIGN.md` first.
+
 # 브라우저 검증
 
 - 실행 중인 앱의 런타임 검증은 `next-dev-loop` 스킬(`/_next/mcp` + `agent-browser`)로 한다. 브라우저 확인을 요구하는 다른 스킬(`implement`, `build-prototype` 등)도 같은 도구를 쓴다.
@@ -44,3 +48,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 자동 코드 리뷰는 최대 1회, 가장 낮은 강도(`code-review low`)로만 돌린다. 리뷰어를 못 부르면 그 사실만 적고 완료로 본다.
 - 지적 중 스펙의 수용 기준을 깨거나 주 경로가 실제로 깨지는 것만 고친다. 나머지는 `docs/follow-ups/`에 한 줄로 남긴다. 재리뷰는 하지 않는다.
 - 스펙이 요구하지 않은 보안 하드닝·엣지케이스·성능 방어는 범위 밖이다.
+
+<!-- BEGIN stack-context:supabase -->
+# Supabase 최신 문서
+
+- Supabase(Auth, Postgres, `@supabase/ssr`, `@supabase/supabase-js`) 작업을 시작할 때 공식 스킬 `supabase`를 먼저 읽고, DB 스키마·RLS·마이그레이션을 바꿀 때는 `supabase-postgres-best-practices`도 읽는다.
+- 스킬로 부족한 내용은 공식 문서 색인 `https://supabase.com/llms.txt`를 작업 시점에 가져와 확인한다. 저장소에 복사해 두지 않는다.
+- 가져온 내용은 `package.json`과 `bun.lock`에 설치된 Supabase 패키지 버전과 대조해서 적용한다.
+<!-- END stack-context:supabase -->
