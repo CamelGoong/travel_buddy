@@ -9,10 +9,13 @@ import { FieldGroup } from "@/components/ui/field";
 import { formatKoreanDate } from "@/lib/tokyo-time";
 import { LogoutButton } from "@/features/auth";
 import { getChecklist } from "@/features/checklist";
+import { getSpentByDay } from "@/features/expenses/server";
 import { RouteLine, tripStage } from "@/features/route-line";
 import { buildCourse } from "@/features/trip";
 
 import { toggleChecklistItem } from "./actions";
+import { summarizeBudget } from "./budget";
+import { BudgetCard } from "./budget-card";
 import { CheckRow } from "./check-row";
 import { loadTripContext } from "./context";
 import { SuggestionIsland } from "./suggestion-island";
@@ -22,8 +25,15 @@ export default async function TripPage() {
   const ctx = await loadTripContext();
   const { trip, now, days, todayDay } = ctx;
 
-  const checklist = await getChecklist(trip.id);
-  const island = await loadIslandData(ctx, checklist, null);
+  const [checklist, spentByDay] = await Promise.all([getChecklist(trip.id), getSpentByDay(trip.id)]);
+  const budget = summarizeBudget({
+    budgetYen: trip.budgetYen,
+    dayCount: days,
+    todayDay,
+    beforeTrip: now.date < trip.startDate,
+    spentByDay,
+  });
+  const island = await loadIslandData(ctx, checklist, null, budget);
 
   const routeLine = (
     <RouteLine model={tripStage({ today: now.date, startDate: trip.startDate, dayCount: days })} />
@@ -75,6 +85,8 @@ export default async function TripPage() {
           </FieldGroup>
         </CardContent>
       </Card>
+
+      <BudgetCard summary={budget} />
 
       <section className="flex flex-col gap-3">
         <h2 className="font-heading text-lg font-semibold">코스 초안</h2>

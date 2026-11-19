@@ -11,10 +11,13 @@ import { cn } from "@/lib/utils";
 import { formatKoreanDate } from "@/lib/tokyo-time";
 import { LogoutButton } from "@/features/auth";
 import { getChecklist } from "@/features/checklist";
-import { formatYen, getDayExpenses } from "@/features/expenses";
+import { allowanceForDay } from "@/features/budget";
+import { formatYen } from "@/features/expenses";
+import { getDayExpenses, getSpentByDay } from "@/features/expenses/server";
 import { dayStage, RouteLine } from "@/features/route-line";
 import { dateOfDay, placesForDay } from "@/features/trip";
 
+import { summarizeBudget } from "../../budget";
 import { loadTripContext } from "../../context";
 import { SuggestionIsland } from "../../suggestion-island";
 import { loadIslandData } from "../../suggestions";
@@ -32,11 +35,23 @@ export default async function DayPage({ params }: PageProps<"/trip/day/[day]">) 
   const date = dateOfDay(trip, dayNumber);
   const places = placesForDay(dayNumber);
   const model = dayStage({ dayNumber, dayDate: date, today: now.date, nowTime: now.time, places });
-  const [expenses, checklist] = await Promise.all([
+  const [expenses, checklist, spentByDay] = await Promise.all([
     getDayExpenses(trip.id, dayNumber),
     getChecklist(trip.id),
+    getSpentByDay(trip.id),
   ]);
-  const island = await loadIslandData(ctx, checklist, dayNumber);
+  const budget = summarizeBudget({
+    budgetYen: trip.budgetYen,
+    dayCount: days,
+    todayDay,
+    beforeTrip: now.date < trip.startDate,
+    spentByDay,
+  });
+  const dayAllowance =
+    trip.budgetYen !== null
+      ? allowanceForDay({ budgetYen: trip.budgetYen, dayCount: days, spentByDay }, dayNumber)
+      : null;
+  const island = await loadIslandData(ctx, checklist, dayNumber, budget);
   const total = expenses.reduce((sum, e) => sum + e.amountYen, 0);
 
   return (
@@ -103,6 +118,13 @@ export default async function DayPage({ params }: PageProps<"/trip/day/[day]">) 
           <CardTitle>이날 여비</CardTitle>
           <CardDescription>
             합계 <span className="font-heading text-lg font-semibold text-foreground" data-testid="day-total">{formatYen(total)}</span>
+            {dayAllowance && (
+              <span className="ml-2" data-testid="day-allowance">
+                {dayAllowance.kind === "allowance"
+                  ? `· 이날 권장 ${formatYen(dayAllowance.yen)}`
+                  : `· 예산을 ${formatYen(dayAllowance.yen)} 넘었어요`}
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">

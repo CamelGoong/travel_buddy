@@ -6,3 +6,4 @@
 - `app/trip/check-row.tsx`: 저장 실패를 무시하고 체크 상태를 유지한다. 실패하면 되돌리고 짧은 오류를 보여 주는 방안을 검토한다.
 - Supabase advisors 경고 2건: 대시보드의 "Enable RLS on new tables automatically" 옵션이 만든 `public.rls_auto_enable()`(SECURITY DEFINER)를 `anon`·`authenticated`가 RPC로 실행할 수 있다. 이 저장소 마이그레이션의 산물이 아니므로 대시보드 옵션의 의도를 확인한 뒤 `EXECUTE` 회수 여부를 정한다.
 - `app/trip/suggestion-island.tsx`(osaka-contextual-suggestions 리뷰): 제안 실행·미룸 기록(`resolveSuggestion`)을 기다리지 않고 섬을 닫는다. 저장에 실패하면 다음에 열 때 같은 제안이 다시 뜬다. 실패하면 다시 시도하거나 짧게 알려 주는 방안을 검토한다.
+- `app/trip/actions.ts`(osaka-trip-budget 리뷰): `saveBudget`가 `setTripBudget` 실패를 잡지 않아, DB 오류가 나면 카드 안 오류 대신 화면 전체 오류 경계가 뜬다. try/catch로 "저장하지 못했어요"를 카드에 보여 주는 방안을 검토한다.
