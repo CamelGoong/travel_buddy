@@ -19,6 +19,13 @@ export const CHECKLIST_KEY_OF_SLOT: Partial<Record<SlotKind, string>> = {
   "transit-pass": "transit-pass",
 };
 
+/** Slot kinds whose files are saved on the device automatically; the others need the switch. */
+export const OFFLINE_BY_DEFAULT: SlotKind[] = ["flight", "stay", "transit-pass", "ticket"];
+
+export function savedOffline(kind: SlotKind, offlineSwitch: boolean): boolean {
+  return OFFLINE_BY_DEFAULT.includes(kind) || offlineSwitch;
+}
+
 export const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"] as const;
 export const MAX_FILE_BYTES = 10 * 1024 * 1024;
 export const MAX_FILES_PER_SLOT = 10;

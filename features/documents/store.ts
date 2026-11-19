@@ -1,6 +1,6 @@
 import { createClient, getUserId } from "@/lib/supabase/server";
 
-import { DEFAULT_SLOTS, MAX_CUSTOM_SLOTS, type SlotKind } from "./slots";
+import { DEFAULT_SLOTS, MAX_CUSTOM_SLOTS, savedOffline, type SlotKind } from "./slots";
 
 export const BUCKET = "trip-documents";
 
@@ -11,6 +11,8 @@ export type DocumentFile = {
   placeName: string | null;
   /** Visible to companions (never for the passport slot) */
   shared: boolean;
+  /** The "also open offline" switch (only used for slots not saved by default) */
+  offline: boolean;
 };
 
 export type DocumentSlot = {
@@ -28,7 +30,7 @@ export async function getVault(tripId: number): Promise<DocumentSlot[]> {
   const load = async () => {
     const { data, error } = await supabase
       .from("document_slots")
-      .select("id, kind, name, document_files(id, file_name, content_type, place_name, shared, created_at)")
+      .select("id, kind, name, document_files(id, file_name, content_type, place_name, shared, offline, created_at)")
       .eq("trip_id", tripId)
       .eq("user_id", me)
       .order("position")
@@ -57,6 +59,7 @@ export async function getVault(tripId: number): Promise<DocumentSlot[]> {
       contentType: f.content_type,
       placeName: f.place_name,
       shared: f.shared,
+      offline: f.offline,
     })),
   }));
 }
@@ -90,6 +93,7 @@ export async function getSharedFiles(tripId: number): Promise<SharedFile[]> {
       contentType: f.content_type,
       placeName: f.place_name,
       shared: f.shared,
+      offline: false,
       slotKind: slot.kind,
       slotName: slot.name,
       ownerNickname: nick.get(f.user_id) ?? "",
@@ -229,4 +233,29 @@ export async function unlinkTicketPlaces(tripId: number, placeNames: string[]): 
     .eq("user_id", me)
     .in("place_name", placeNames);
   if (error) throw error;
+}
+
+/** Turns the "also open offline" switch on or off for one of the signed-in person's files. */
+export async function setFileOffline(fileId: number, offline: boolean): Promise<void> {
+  const supabase = await createClient();
+  const me = await getUserId();
+  if (!me) return;
+  const { error } = await supabase.from("document_files").update({ offline }).eq("id", fileId).eq("user_id", me);
+  if (error) throw error;
+}
+
+export type OfflineEntry = { id: number; fileName: string; contentType: string; slotName: string };
+
+/** Files that should be on this device: the person's own and the shared ones from slots saved by default. */
+export async function getOfflineManifest(tripId: number): Promise<OfflineEntry[]> {
+  const [vault, shared] = await Promise.all([getVault(tripId), getSharedFiles(tripId)]);
+  const own = vault.flatMap((slot) =>
+    slot.files
+      .filter((file) => savedOffline(slot.kind, file.offline))
+      .map((file) => ({ id: file.id, fileName: file.fileName, contentType: file.contentType, slotName: slot.name })),
+  );
+  const others = shared
+    .filter((file) => savedOffline(file.slotKind, false))
+    .map((file) => ({ id: file.id, fileName: file.fileName, contentType: file.contentType, slotName: file.slotName }));
+  return [...own, ...others];
 }

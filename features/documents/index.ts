@@ -7,6 +7,8 @@ export {
   MAX_CUSTOM_SLOTS,
   MAX_FILES_PER_SLOT,
   MAX_SLOT_NAME,
+  OFFLINE_BY_DEFAULT,
+  savedOffline,
   parseSlotName,
   type SlotKind,
 } from "./slots";

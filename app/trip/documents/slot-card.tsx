@@ -6,11 +6,19 @@ import { RiAttachment2, RiFileTextLine } from "@remixicon/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
-import { fileProblem, type SlotKind } from "@/features/documents";
+import { fileProblem, OFFLINE_BY_DEFAULT, type SlotKind } from "@/features/documents";
 
-import { changeFilePlace, changeFileShared, registerFile, removeFile, removeSlot } from "./actions";
+import { OfflineBadge } from "@/components/offline-badge";
+import {
+  changeFileOffline,
+  changeFilePlace,
+  changeFileShared,
+  registerFile,
+  removeFile,
+  removeSlot,
+} from "./actions";
 
-type FileView = { id: number; fileName: string; placeName: string | null; shared: boolean };
+type FileView = { id: number; fileName: string; placeName: string | null; shared: boolean; offline: boolean };
 type SharedView = { id: number; fileName: string; ownerNickname: string };
 
 const SELECT_CLASS =
@@ -99,6 +107,7 @@ export function SlotCard({
                     <RiFileTextLine className="shrink-0 text-muted-foreground" />
                     <span className="truncate">{f.fileName}</span>
                   </a>
+                  <OfflineBadge fileId={f.id} />
                   {askDelete === f.id ? (
                     <span className="flex shrink-0 gap-1">
                       <Button
@@ -138,6 +147,19 @@ export function SlotCard({
                       </option>
                     ))}
                   </select>
+                )}
+                {!OFFLINE_BY_DEFAULT.includes(kind) && (
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={f.offline}
+                      onChange={(e) => {
+                        const next = e.target.checked;
+                        startTransition(() => changeFileOffline(f.id, next));
+                      }}
+                    />
+                    오프라인에서도 열기
+                  </label>
                 )}
                 {kind !== "passport" && canShare && (
                   <label className="flex items-center gap-2 text-sm text-muted-foreground">

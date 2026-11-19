@@ -4,7 +4,8 @@ import { RiArrowLeftSLine } from "@remixicon/react";
 import { AppShell, HomeLink, PageHeader } from "@/components/app-shell";
 import { buttonVariants } from "@/components/ui/button";
 import { getUserId } from "@/lib/supabase/server";
-import { getSharedFiles, getVault } from "@/features/documents/store";
+import { getOfflineManifest, getSharedFiles, getVault } from "@/features/documents/store";
+import { OfflineSync } from "@/components/offline-sync";
 import { getMembers } from "@/features/members/server";
 import { RouteLine, tripStage } from "@/features/route-line";
 import { buildCourse } from "@/features/trip";
@@ -17,10 +18,11 @@ export default async function DocumentsPage() {
   const ctx = await loadTripContext("/trip/documents");
   const { trip, now, days } = ctx;
   const userId = (await getUserId())!;
-  const [vault, sharedFiles, members] = await Promise.all([
+  const [vault, sharedFiles, members, manifest] = await Promise.all([
     getVault(trip.id),
     getSharedFiles(trip.id),
     getMembers(trip.id),
+    getOfflineManifest(trip.id),
   ]);
   const canShare = members.length > 1;
   const defaultKinds = new Set(vault.map((slot) => slot.kind));
@@ -84,6 +86,7 @@ export default async function DocumentsPage() {
         </section>
       )}
       <AddSlotForm />
+      <OfflineSync manifest={manifest} />
     </AppShell>
   );
 }

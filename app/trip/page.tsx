@@ -11,6 +11,8 @@ import { LogoutButton } from "@/features/auth";
 import { getChecklist, getPendingSuggestions } from "@/features/checklist";
 import { getVault } from "@/features/documents/store";
 import { getMembers } from "@/features/members/server";
+import { getOfflineManifest } from "@/features/documents/store";
+import { OfflineSync } from "@/components/offline-sync";
 import { getFxSnapshot } from "@/features/fx/server";
 import { getSpentByDay } from "@/features/expenses/server";
 import { RouteLine, tripStage } from "@/features/route-line";
@@ -31,13 +33,14 @@ export default async function TripPage() {
   const ctx = await loadTripContext();
   const { trip, now, days, todayDay } = ctx;
 
-  const [checklist, pending, spentByDay, vault, members, fx] = await Promise.all([
+  const [checklist, pending, spentByDay, vault, members, fx, manifest] = await Promise.all([
     getChecklist(trip.id),
     getPendingSuggestions(trip.id),
     getSpentByDay(trip.id),
     getVault(trip.id),
     getMembers(trip.id),
     getFxSnapshot(),
+    getOfflineManifest(trip.id),
   ]);
   const filledSlots = vault.filter((slot) => slot.files.length > 0).length;
   const budget = summarizeBudget({
@@ -121,6 +124,8 @@ export default async function TripPage() {
           </CardHeader>
         </Card>
       </Link>
+
+      <OfflineSync manifest={manifest} />
 
       <CompanionsCard
         tripId={trip.id}

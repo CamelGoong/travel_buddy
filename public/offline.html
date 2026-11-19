@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>오프라인 서류</title>
+  <style>
+    :root { color-scheme: light; --ink: #241d3b; --muted: #6b6485; --line: #ffffffcc; --accent: #5b4bea; }
+    * { box-sizing: border-box }
+    body {
+      margin: 0; padding: 24px 16px 48px; color: var(--ink);
+      font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+      background: linear-gradient(160deg, #ffd9e6, #e3d9ff 45%, #cfe8ff); min-height: 100vh;
+    }
+    main { max-width: 26rem; margin: 0 auto; display: flex; flex-direction: column; gap: 16px }
+    h1 { margin: 0; font-size: 22px; font-weight: 800 }
+    p { margin: 0; line-height: 1.6 }
+    .muted { color: var(--muted); font-size: 14px }
+    .card { background: #ffffffb3; border: 1px solid var(--line); border-radius: 22px; padding: 16px; }
+    .card h2 { margin: 0 0 8px; font-size: 15px }
+    ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px }
+    a { color: var(--accent); font-weight: 600; word-break: break-all }
+    button { font: inherit; border: 0; border-radius: 999px; padding: 10px 16px; background: var(--accent); color: #fff; cursor: pointer }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>오프라인 서류</h1>
+    <p class="muted">인터넷이 연결되지 않았어요. 이 기기에 저장해 둔 서류는 열 수 있어요.</p>
+    <div id="list" style="display:flex;flex-direction:column;gap:12px"></div>
+    <button type="button" id="retry">다시 연결해 보기</button>
+  </main>
+  <script>
+    // Reads the same IndexedDB the app writes (lib/offline-store.ts).
+    var list = document.getElementById("list");
+    document.getElementById("retry").onclick = function () { location.href = "/trip"; };
+
+    function showEmpty() {
+      list.innerHTML = '<div class="card"><p>저장된 서류가 없어요.</p><p class="muted">인터넷이 될 때 앱을 열어 두면 항공권과 입장권이 이 기기에 저장돼요.</p></div>';
+    }
+
+    var open = indexedDB.open("tb-offline", 1);
+    open.onupgradeneeded = function () { open.result.createObjectStore("files", { keyPath: "id" }); };
+    open.onerror = showEmpty;
+    open.onsuccess = function () {
+      var db = open.result;
+      var all = db.transaction("files", "readonly").objectStore("files").getAll();
+      all.onerror = showEmpty;
+      all.onsuccess = function () {
+        var files = all.result || [];
+        db.close();
+        if (files.length === 0) return showEmpty();
+        var groups = {};
+        files.forEach(function (f) { (groups[f.slotName] = groups[f.slotName] || []).push(f); });
+        Object.keys(groups).forEach(function (slot) {
+          var card = document.createElement("section");
+          card.className = "card";
+          var title = document.createElement("h2");
+          title.textContent = slot;
+          var ul = document.createElement("ul");
+          groups[slot].forEach(function (f) {
+            var li = document.createElement("li");
+            var a = document.createElement("a");
+            a.textContent = f.fileName;
+            a.href = URL.createObjectURL(f.blob);
+            a.target = "_blank";
+            a.rel = "noreferrer";
+            li.appendChild(a);
+            ul.appendChild(li);
+          });
+          card.appendChild(title);
+          card.appendChild(ul);
+          list.appendChild(card);
+        });
+      };
+    };
+  </script>
+</body>
+</html>

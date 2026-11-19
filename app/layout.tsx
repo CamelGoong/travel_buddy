@@ -1,3 +1,4 @@
+import { RegisterOffline } from "@/components/register-offline";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, Noto_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
@@ -30,7 +31,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="ko"
       className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, inter.variable, "font-serif", notoSerif.variable, jetbrainsMonoHeading.variable)}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <RegisterOffline />
+      </body>
     </html>
   );
 }
