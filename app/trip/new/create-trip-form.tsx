@@ -7,6 +7,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { Input } from "@/components/ui/input";
 
 import { createTrip, type CreateTripState } from "./actions";
+import { CompanionChips, InterestChips } from "./choice-chips";
 
 export function CreateTripForm({ defaultStart }: { defaultStart: string }) {
   const [state, formAction, pending] = useActionState<CreateTripState, FormData>(createTrip, {
@@ -63,6 +64,14 @@ export function CreateTripForm({ defaultStart }: { defaultStart: string }) {
           />
           <FieldDescription>여행 전체에 쓸 돈이에요. 나중에 정해도 돼요.</FieldDescription>
           <FieldError>{state.budgetError}</FieldError>
+        </Field>
+        <Field>
+          <FieldLabel>누구와 가나요? (선택)</FieldLabel>
+          <CompanionChips />
+        </Field>
+        <Field>
+          <FieldLabel>끌리는 것 (선택, 최대 3개)</FieldLabel>
+          <InterestChips />
         </Field>
         <Button type="submit" size="lg" className="w-full" disabled={pending}>
           {pending ? "코스 짜는 중…" : "여행 만들기"}

@@ -8,16 +8,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FieldGroup } from "@/components/ui/field";
 import { formatKoreanDate } from "@/lib/tokyo-time";
 import { LogoutButton } from "@/features/auth";
-import { getChecklist } from "@/features/checklist";
+import { getChecklist, getPendingSuggestions } from "@/features/checklist";
 import { getSpentByDay } from "@/features/expenses/server";
 import { RouteLine, tripStage } from "@/features/route-line";
 import { buildCourse } from "@/features/trip";
 
-import { toggleChecklistItem } from "./actions";
+import { acceptSuggestion, dismissChecklistSuggestion, toggleChecklistItem } from "./actions";
 import { summarizeBudget } from "./budget";
 import { BudgetCard } from "./budget-card";
 import { CheckRow } from "./check-row";
 import { loadTripContext } from "./context";
+import { ChecklistSuggestions } from "./checklist-suggestions";
 import { SuggestionIsland } from "./suggestion-island";
 import { loadIslandData } from "./suggestions";
 
@@ -25,7 +26,11 @@ export default async function TripPage() {
   const ctx = await loadTripContext();
   const { trip, now, days, todayDay } = ctx;
 
-  const [checklist, spentByDay] = await Promise.all([getChecklist(trip.id), getSpentByDay(trip.id)]);
+  const [checklist, pending, spentByDay] = await Promise.all([
+    getChecklist(trip.id),
+    getPendingSuggestions(trip.id),
+    getSpentByDay(trip.id),
+  ]);
   const budget = summarizeBudget({
     budgetYen: trip.budgetYen,
     dayCount: days,
@@ -84,12 +89,24 @@ export default async function TripPage() {
             ))}
           </FieldGroup>
         </CardContent>
+        {pending.length > 0 && (
+          <CardContent>
+            <ChecklistSuggestions
+              suggestions={pending}
+              onAdd={acceptSuggestion}
+              onDismiss={dismissChecklistSuggestion}
+            />
+          </CardContent>
+        )}
       </Card>
 
       <BudgetCard summary={budget} />
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-heading text-lg font-semibold">코스 초안</h2>
+        <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
+          코스 초안
+          {trip.courseSource === "default" && <Badge variant="outline">기본 코스</Badge>}
+        </h2>
         <ol className="flex flex-col gap-3" data-testid="course">
           {course.map((day) => (
             <li key={day.dayNumber}>

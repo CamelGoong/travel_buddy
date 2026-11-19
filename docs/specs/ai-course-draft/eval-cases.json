@@ -1,0 +1,12 @@
+[
+  { "id": "c01", "dayCount": 1, "companion": "solo", "interests": ["food"] },
+  { "id": "c02", "dayCount": 1, "companion": "couple", "interests": ["night-view", "cafe"] },
+  { "id": "c03", "dayCount": 3, "companion": "family-kids", "interests": ["theme-park"] },
+  { "id": "c04", "dayCount": 3, "companion": "friends", "interests": ["shopping", "food"] },
+  { "id": "c05", "dayCount": 3, "companion": "parents", "interests": ["history-culture"] },
+  { "id": "c06", "dayCount": 5, "companion": "couple", "interests": ["cafe", "shopping", "night-view"] },
+  { "id": "c07", "dayCount": 5, "companion": "family-kids", "interests": ["theme-park", "history-culture"] },
+  { "id": "c08", "dayCount": 8, "companion": "friends", "interests": ["food", "night-view", "shopping"] },
+  { "id": "c09", "dayCount": 8, "companion": "parents", "interests": ["history-culture", "cafe"] },
+  { "id": "c10", "dayCount": 14, "companion": "solo", "interests": ["food", "history-culture", "cafe"] }
+]

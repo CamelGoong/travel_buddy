@@ -6,8 +6,10 @@ export {
   dayCount,
   dayNumberOn,
   MAX_TRIP_DAYS,
+  placesOfDay,
+  type TripCourse,
   type TripDates,
 } from "./trip-days";
 export { validateTripDates } from "./validate";
-export { getLatestTrip, type Trip } from "./queries";
-export { insertTrip, setTripBudget } from "./mutations";
+export { getLatestTrip, type Trip, type CourseSource } from "./queries";
+export { countTripsCreatedSince, insertTrip, setTripBudget, type NewTrip } from "./mutations";

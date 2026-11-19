@@ -1,6 +1,6 @@
 import { addDays, daysBetween } from "@/lib/tokyo-time";
 
-import { placesForDay, type CourseDay } from "./course";
+import { placesForDay, type CourseDay, type Place } from "./course";
 
 export type TripDates = { startDate: string; endDate: string };
 
@@ -20,10 +20,18 @@ export function dayNumberOn(trip: TripDates, date: string): number | null {
   return n >= 1 && n <= dayCount(trip) ? n : null;
 }
 
-export function buildCourse(trip: TripDates): CourseDay[] {
+/** Dates plus the stored AI course; a null course means the default course. */
+export type TripCourse = TripDates & { course?: Place[][] | null };
+
+/** Places of one day: the stored course when there is one, else the default course. */
+export function placesOfDay(trip: TripCourse, dayNumber: number): Place[] {
+  return trip.course ? (trip.course[dayNumber - 1] ?? []) : placesForDay(dayNumber);
+}
+
+export function buildCourse(trip: TripCourse): CourseDay[] {
   return Array.from({ length: dayCount(trip) }, (_, i) => ({
     dayNumber: i + 1,
     date: dateOfDay(trip, i + 1),
-    places: placesForDay(i + 1),
+    places: placesOfDay(trip, i + 1),
   }));
 }
