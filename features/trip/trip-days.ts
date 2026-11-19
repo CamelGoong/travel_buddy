@@ -6,6 +6,14 @@ export type TripDates = { startDate: string; endDate: string };
 
 export const MAX_TRIP_DAYS = 14;
 
+/** The trip's own name, or "오사카 N박 N일" until the owner names it. */
+export function tripTitle(trip: TripDates & { name?: string | null }): string {
+  const name = trip.name?.trim();
+  if (name) return name;
+  const days = dayCount(trip);
+  return `오사카 ${days - 1}박 ${days}일`;
+}
+
 export function dayCount(trip: TripDates): number {
   return daysBetween(trip.startDate, trip.endDate) + 1;
 }

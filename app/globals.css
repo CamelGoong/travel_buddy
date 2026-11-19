@@ -370,3 +370,52 @@ body::after {
     transform: translateX(300%);
   }
 }
+
+/* App introduction: each card fades up into place (features/onboarding/tour.tsx). */
+@layer components {
+  .tour-step {
+    animation: tour-step-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tour-step {
+      animation: none;
+    }
+  }
+}
+
+@keyframes tour-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Route map pins and containment (app/trip/day/[day]/route-map.tsx). */
+.leaflet-container {
+  z-index: 0;
+  font-family: inherit;
+  background: #efe9dd;
+}
+.tb-pin {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  border: 2px solid #fff;
+  background: linear-gradient(135deg, #6d4fe8, #2f6be0);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 3px 8px rgb(91 75 234 / 0.45);
+}
+.tb-pin-lg {
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+}

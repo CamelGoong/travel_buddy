@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { RiFolderLine } from "@remixicon/react";
 
-import { AppShell, HomeLink, PageHeader } from "@/components/app-shell";
+import { AppShell, PageHeader } from "@/components/app-shell";
 import { LinkArrow } from "@/components/link-pending";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatKoreanDate } from "@/lib/tokyo-time";
-import { LogoutButton } from "@/features/auth";
+import { OnboardingGate } from "@/features/onboarding";
 import { getChecklist, getPendingSuggestions } from "@/features/checklist";
 import { getVault } from "@/features/documents/store";
 import { getMembers } from "@/features/members/server";
@@ -16,10 +15,11 @@ import { OfflineSync } from "@/components/offline-sync";
 import { getFxSnapshot } from "@/features/fx/server";
 import { getSpentByDay } from "@/features/expenses/server";
 import { RouteLine, tripStage } from "@/features/route-line";
-import { buildCourse } from "@/features/trip";
+import { buildCourse, tripTitle } from "@/features/trip";
 
 import { acceptSuggestion, dismissChecklistSuggestion } from "./actions";
 import { summarizeBudget } from "./budget";
+import { AppNav } from "../app-nav";
 import { BudgetCard } from "./budget-card";
 import { RegenerateButton } from "./regenerate-button";
 import { ChecklistEditor } from "./checklist-editor";
@@ -67,13 +67,8 @@ export default async function TripPage() {
           )}
         </>
       }
-      title="오사카 여행"
-      action={
-        <div className="flex items-center">
-          <HomeLink />
-          <LogoutButton />
-        </div>
-      }
+      title={tripTitle(trip)}
+      action={<AppNav />}
     />
   );
 
@@ -126,6 +121,7 @@ export default async function TripPage() {
       </Link>
 
       <OfflineSync manifest={manifest} />
+      <OnboardingGate />
 
       <CompanionsCard
         tripId={trip.id}
@@ -167,9 +163,6 @@ export default async function TripPage() {
         </ol>
       </section>
 
-      <Link href="/trip/new" className={buttonVariants({ variant: "outline" })}>
-        새 여행 만들기
-      </Link>
     </AppShell>
   );
 }

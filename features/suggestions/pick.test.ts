@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { estimateTravel, mapsDirectionsUrl } from "./geo";
+import { estimateTravel, mapsDirectionsUrl } from "@/lib/geo";
 import { pickSuggestion, type PickInput } from "./pick";
 
 const places = [

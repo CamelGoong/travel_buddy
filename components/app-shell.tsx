@@ -1,9 +1,5 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
-import { RiHome5Line } from "@remixicon/react";
 
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 /**
  * Common page shell: the route line stays on top, content keeps one
@@ -58,15 +54,5 @@ export function PageHeader({
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </header>
-  );
-}
-
-/** Always-available way back to the trip list (home). */
-export function HomeLink({ className }: { className?: string }) {
-  return (
-    <Link href="/trips" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), className)}>
-      <RiHome5Line data-icon="inline-start" />
-      내 여행
-    </Link>
   );
 }

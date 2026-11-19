@@ -1,4 +1,4 @@
-import { distanceMeters, estimateTravel, walkingMinutes, type LatLng, type TravelEstimate } from "./geo";
+import { distanceMeters, estimateTravel, walkingMinutes, type LatLng, type TravelEstimate } from "@/lib/geo";
 
 // Which single proactive suggestion to show now (docs/specs/osaka-contextual-suggestions/).
 

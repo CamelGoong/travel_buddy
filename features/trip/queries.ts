@@ -8,6 +8,8 @@ export type CourseSource = "ai" | "default";
 
 export type Trip = {
   id: number;
+  /** The owner's own name for the trip; null shows the default title */
+  name: string | null;
   startDate: string;
   endDate: string;
   /** Optional total budget in yen */
@@ -26,7 +28,7 @@ type CourseJson = { places: Place[] }[];
 
 export const CURRENT_TRIP_COOKIE = "current_trip";
 
-const TRIP_COLUMNS = "id, user_id, start_date, end_date, budget_yen, course, course_source, companion, interests";
+const TRIP_COLUMNS = "id, name, user_id, start_date, end_date, budget_yen, course, course_source, companion, interests";
 
 /**
  * The trip the user is looking at: the one picked on the trip list (cookie),
@@ -71,6 +73,7 @@ export async function listTrips(): Promise<Trip[]> {
 
 type TripRow = {
   id: number;
+  name: string | null;
   user_id: string;
   start_date: string;
   end_date: string;
@@ -85,6 +88,7 @@ function toTrip(data: TripRow, me: string | null): Trip {
   const stored = data.course as CourseJson | null;
   return {
     id: data.id,
+    name: data.name,
     startDate: data.start_date,
     endDate: data.end_date,
     budgetYen: data.budget_yen,

@@ -9,10 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getTokyoNow } from "@/lib/clock";
 import { getUserId } from "@/lib/supabase/server";
 import { formatKoreanDate } from "@/lib/tokyo-time";
-import { LogoutButton } from "@/features/auth";
-import { dayCount, getCurrentTrip, listTrips } from "@/features/trip";
+import { OnboardingGate, ReplayTour } from "@/features/onboarding";
+import { getCurrentTrip, listTrips, tripTitle } from "@/features/trip";
 
+import { AppNav } from "../app-nav";
 import { OpenTripLink } from "./open-trip-link";
+import { TripCardActions } from "./trip-card-actions";
 
 /** Home: all of the user's trips, with the current one marked, and a way to make another. */
 export default async function TripsPage() {
@@ -22,7 +24,7 @@ export default async function TripsPage() {
 
   return (
     <AppShell
-      header={<PageHeader eyebrow="Travel Buddy" title="내 여행" action={<LogoutButton />} />}
+      header={<PageHeader eyebrow="Travel Buddy" title="내 여행" action={<AppNav current="trips" />} />}
     >
       {trips.length === 0 ? (
         <Card>
@@ -32,18 +34,18 @@ export default async function TripsPage() {
           </CardHeader>
         </Card>
       ) : (
-        <ul className="flex flex-col gap-3" data-testid="trip-list">
+        <ul className="flex flex-col gap-4" data-testid="trip-list">
           {trips.map((trip) => {
-            const days = dayCount(trip);
+            const title = tripTitle(trip);
             const status =
               now.date < trip.startDate ? "출발 전" : now.date > trip.endDate ? "다녀옴" : "여행 중";
             return (
-              <li key={trip.id}>
+              <li key={trip.id} className="flex flex-col gap-1.5">
                 <OpenTripLink tripId={trip.id}>
                     <Card size="sm" className="transition-colors hover:bg-muted/50">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                          오사카 {days - 1}박 {days}일
+                          {title}
                           <Badge variant={status === "여행 중" ? "default" : "outline"}>{status}</Badge>
                           {current?.id === trip.id && <Badge variant="secondary">보는 중</Badge>}
                           {!trip.isOwner && <Badge variant="outline">함께하는 여행</Badge>}
@@ -57,6 +59,7 @@ export default async function TripsPage() {
                       </CardContent>
                     </Card>
                 </OpenTripLink>
+                {trip.isOwner && <TripCardActions tripId={trip.id} name={trip.name} title={title} />}
               </li>
             );
           })}
@@ -67,6 +70,10 @@ export default async function TripsPage() {
         <RiAddLine data-icon="inline-start" />
         새 여행 만들기
       </Link>
+      <div className="flex justify-center">
+        <ReplayTour />
+      </div>
+      <OnboardingGate />
     </AppShell>
   );
 }

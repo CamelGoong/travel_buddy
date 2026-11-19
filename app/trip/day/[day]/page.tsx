@@ -2,14 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RiArrowLeftSLine } from "@remixicon/react";
 
-import { AppShell, HomeLink, PageHeader } from "@/components/app-shell";
+import { AppShell, PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { formatKoreanDate } from "@/lib/tokyo-time";
-import { LogoutButton } from "@/features/auth";
 import { getChecklist } from "@/features/checklist";
 import { allowanceForDay } from "@/features/budget";
 import {
@@ -25,14 +24,25 @@ import { getFxSnapshot } from "@/features/fx/server";
 import { Won } from "@/components/won";
 import { getDayExpenses, getSpentByDay } from "@/features/expenses/server";
 import { dayStage, RouteLine } from "@/features/route-line";
-import { dateOfDay, OSAKA_SPOTS, placesOfDay } from "@/features/trip";
+import {
+  dateOfDay,
+  describeLeg,
+  googleRouteUrl,
+  mappablePlaces,
+  OSAKA_SPOTS,
+  placesOfDay,
+  routeLegs,
+} from "@/features/trip";
+import { CollapsibleList } from "@/components/collapsible-list";
 
+import { AppNav } from "../../../app-nav";
 import { summarizeBudget } from "../../budget";
 import { loadTripContext } from "../../context";
 import { SuggestionIsland } from "../../suggestion-island";
 import { loadIslandData } from "../../suggestions";
 import { recordExpense } from "./actions";
 import { PlacesEditor } from "./places-editor";
+import { RouteMap } from "./route-map";
 import { ExpenseForm } from "./expense-form";
 
 export default async function DayPage({ params, searchParams }: PageProps<"/trip/day/[day]">) {
@@ -80,6 +90,9 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
       ? allowanceForDay({ budgetYen: trip.budgetYen, dayCount: days, spentByDay }, dayNumber)
       : null;
   const island = await loadIslandData(ctx, checklist, dayNumber, budget);
+  const mapPlaces = mappablePlaces(places);
+  const legs = routeLegs(mapPlaces).map((leg) => ({ from: leg.from.index, to: leg.to.index, text: describeLeg(leg) }));
+  const routeUrl = googleRouteUrl(mapPlaces);
   const total = expenses.reduce((sum, e) => sum + e.amountYen, 0);
   const shownTotal = shown.reduce((sum, e) => sum + e.amountYen, 0);
 
@@ -90,7 +103,6 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
       header={
         <div className="flex flex-col gap-3">
           <div className="-ml-2 flex items-center gap-1">
-            <HomeLink />
             <Link href="/trip" className={buttonVariants({ variant: "ghost", size: "sm" })}>
               <RiArrowLeftSLine data-icon="inline-start" />
               여행 전체
@@ -112,7 +124,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
                 {dayNumber}일차 {dayNumber === todayDay && <Badge>오늘</Badge>}
               </span>
             }
-            action={<LogoutButton />}
+            action={<AppNav />}
           />
         </div>
       }
@@ -142,7 +154,8 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
           ) : places.length === 0 ? (
             <p className="text-muted-foreground">자유 일정이에요. 마음 가는 대로!</p>
           ) : (
-            <ol className="flex flex-col gap-3" data-testid="day-places">
+            <div className="flex items-start justify-between gap-3">
+            <ol className="flex min-w-0 flex-1 flex-col gap-3" data-testid="day-places">
               {places.map((p, i) => (
                 <li
                   key={p.name}
@@ -158,6 +171,14 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
                 </li>
               ))}
             </ol>
+              {mapPlaces.length > 0 && (
+                <RouteMap
+                  places={mapPlaces}
+                  legs={legs.map((l) => ({ from: l.from, to: l.to, text: l.text }))}
+                  routeUrl={routeUrl}
+                />
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
@@ -167,6 +188,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
           <CardTitle>이날 여비</CardTitle>
           <CardDescription>
             합계 <span className="font-heading text-lg font-semibold text-foreground" data-testid="day-total">{formatYen(total)}</span>
+            <span className="ml-1 text-sm" data-testid="day-count">· {expenses.length}건</span>
             <Won yen={total} rate={fx?.rate} />
             {dayAllowance && (
               <span className="ml-2" data-testid="day-allowance">
@@ -188,6 +210,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
           {expenses.length > 0 && (
             <>
               <Separator />
+              {expenses.length >= 4 && (
               <div className="flex flex-col gap-2" data-testid="expense-filter">
                 <div className="flex flex-wrap gap-1.5">
                   <FilterChip href={filterHref(null, categoryFilter)} active={personFilter === null}>전체</FilterChip>
@@ -211,8 +234,11 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
                   </p>
                 )}
               </div>
-              <ul className="flex flex-col gap-3" data-testid="expenses">
-                {shown.map((e) => (
+              )}
+              <CollapsibleList
+                testId="expenses"
+                className="flex flex-col gap-3"
+                items={[...shown].reverse().map((e) => (
                   <li key={e.id} className="flex flex-col gap-1">
                     <div className="flex justify-between gap-3">
                       <span>{e.label}</span>
@@ -229,7 +255,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
                     </p>
                   </li>
                 ))}
-              </ul>
+              />
             </>
           )}
         </CardContent>

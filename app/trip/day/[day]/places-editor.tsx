@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MAX_PLACE_NAME } from "@/features/trip/course-edit";
 
-import { editDay, type CourseEdit } from "../../course-actions";
+import { editDay, searchPlaces, type CourseEdit, type PlaceCandidate } from "../../course-actions";
 
 const SELECT_CLASS =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
@@ -27,6 +27,9 @@ export function PlacesEditor({
   const [pending, startTransition] = useTransition();
   const [spotKey, setSpotKey] = useState("");
   const [typed, setTyped] = useState("");
+  const [candidates, setCandidates] = useState<PlaceCandidate[] | null>(null);
+  const [searchNote, setSearchNote] = useState<string | null>(null);
+  const [searching, startSearch] = useTransition();
 
   const run = (edit: CourseEdit, after?: () => void) => {
     setError(null);
@@ -96,17 +99,77 @@ export function PlacesEditor({
         </div>
         <div className="flex gap-2">
           <Input
-            aria-label="직접 입력한 장소 이름"
-            placeholder="가고 싶은 곳 이름 (직접 입력)"
+            aria-label="찾을 장소 이름"
+            placeholder="가고 싶은 곳 이름 (예: 이치란 도톤보리점)"
             maxLength={MAX_PLACE_NAME}
             value={typed}
-            onChange={(e) => setTyped(e.target.value)}
+            onChange={(e) => {
+              setTyped(e.target.value);
+              setCandidates(null);
+              setSearchNote(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                document.getElementById("place-search")?.click();
+              }
+            }}
           />
-          <Button variant="outline" disabled={pending || typed.trim() === ""} onClick={() => run({ op: "add", name: typed }, () => setTyped(""))}>
-            추가
+          <Button
+            id="place-search"
+            variant="outline"
+            disabled={pending || searching || typed.trim() === ""}
+            onClick={() =>
+              startSearch(async () => {
+                setError(null);
+                setSearchNote(null);
+                const found = await searchPlaces(typed);
+                if (!found.ok) {
+                  setCandidates(null);
+                  return setSearchNote(found.error);
+                }
+                setCandidates(found.results);
+                if (found.results.length === 0) setSearchNote("검색 결과가 없어요. 이름만 추가할 수도 있어요.");
+              })
+            }
+          >
+            {searching ? "찾는 중…" : "위치 찾기"}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">직접 입력한 곳은 길찾기가 이름 검색으로 열리고, 도착 알림은 없어요.</p>
+        {candidates && candidates.length > 0 && (
+          <ul className="flex flex-col gap-1.5" data-testid="place-candidates">
+            {candidates.map((c) => (
+              <li key={`${c.lat},${c.lng}`} className="flex items-center justify-between gap-2 rounded-lg border px-2 py-1.5 text-sm">
+                <span className="min-w-0 flex-1 text-muted-foreground">{c.address}</span>
+                <Button
+                  size="xs"
+                  disabled={pending}
+                  onClick={() =>
+                    run({ op: "add", name: typed, lat: c.lat, lng: c.lng }, () => {
+                      setTyped("");
+                      setCandidates(null);
+                    })
+                  }
+                >
+                  여기로 추가
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {searchNote && <p className="text-sm text-muted-foreground">{searchNote}</p>}
+        {typed.trim() !== "" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="self-start"
+            disabled={pending}
+            onClick={() => run({ op: "add", name: typed }, () => { setTyped(""); setCandidates(null); })}
+          >
+            위치 없이 이름만 추가
+          </Button>
+        )}
+        <p className="text-xs text-muted-foreground">위치를 고르면 동선 지도와 도착 알림이 함께 동작해요. 이름만 넣으면 길찾기가 이름 검색으로 열려요.</p>
       </div>
       {error && (
         <p className="text-sm text-destructive" role="alert" data-testid="edit-error">

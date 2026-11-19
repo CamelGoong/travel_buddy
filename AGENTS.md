@@ -32,6 +32,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - `skills update`는 복사 방식을 보존하지 않으므로 사용하지 않는다. `update --copy`도 대안으로 사용하지 않는다.
 - 이 정책은 업데이트된 `update-project-skills` 본문이 symlink를 요구하더라도 우선한다. 스킬을 직접 수정할 때도 두 복사본을 함께 반영하고, 완료 시 symlink가 없는지와 두 복사본의 파일 내용이 같은지 확인한다.
 
+# 앱 소개 동기화
+
+- 신규 회원에게 보여 주는 앱 소개는 `features/onboarding/steps.ts` 한 파일의 목록으로 만든다. 사용자에게 보이는 기능을 더하거나 바꾸거나 없앨 때는 같은 변경에서 이 목록의 해당 단계 문구도 고친다.
+
 # 화면 작업
 
 - Work that builds or reviews screens reads `DESIGN.md` first.
