@@ -30,8 +30,10 @@ export function useLocation(dev: DevLocation | null) {
     if (dev || !("geolocation" in navigator)) return;
     let cancelled = false;
     // Only read the current permission here; the prompt itself waits for the user's yes.
-    navigator.permissions
-      ?.query({ name: "geolocation" })
+    // Without the Permissions API we cannot tell, so the catch asks first as if never asked.
+    (navigator.permissions
+      ? navigator.permissions.query({ name: "geolocation" })
+      : Promise.reject(new Error("no Permissions API")))
       .then((status) => {
         if (cancelled) return;
         setPermission(status.state);
