@@ -25,7 +25,15 @@ Radius and spacing: `--radius` `0.625rem`; Tailwind default spacing scale.
 
 Source: `components/ui/`. Update this section when it changes.
 
+- `Alert`
+- `Badge`
 - `Button`
+- `Card`
+- `Checkbox`
+- `Field`
+- `Input`
+- `Label`
+- `Separator`
 
 ## Rejected patterns
 
@@ -33,8 +41,11 @@ Source: `components/ui/`. Update this section when it changes.
 - Per-screen arbitrary colors instead of semantic tokens → [ui-composition](docs/decisions/ui-composition.md)
 - Bottom floating pill as the only progress indicator → [route-line](docs/decisions/route-line.md)
 - Progress shown only as a scrolling vertical rail in the list → [route-line](docs/decisions/route-line.md)
+- Proactive suggestion shown first as a full card that takes over the screen → [suggestion-nudge](docs/decisions/suggestion-nudge.md)
+- Bottom speech bubble that collapses into a dot for proactive suggestions → [suggestion-nudge](docs/decisions/suggestion-nudge.md)
 
 ## Map
 
 - General controls, page shell, loading/empty/error states → [ui-composition](docs/decisions/ui-composition.md)
 - Trip progress line at the top of the app → [route-line](docs/decisions/route-line.md)
+- Proactive suggestion island under the route line → [suggestion-nudge](docs/decisions/suggestion-nudge.md)

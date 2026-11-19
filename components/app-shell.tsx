@@ -6,16 +6,28 @@ import type { ReactNode } from "react";
  */
 export function AppShell({
   routeLine,
+  suggestion,
   header,
   children,
 }: {
   routeLine?: ReactNode;
+  /** Proactive suggestion floating just under the route line */
+  suggestion?: ReactNode;
   header?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <div className="flex min-h-svh flex-col">
-      {routeLine}
+      {(routeLine || suggestion) && (
+        <div className="sticky top-0 z-20">
+          {routeLine}
+          {suggestion && (
+            <div className="pointer-events-none absolute inset-x-0 top-full px-3 pt-2 *:pointer-events-auto">
+              {suggestion}
+            </div>
+          )}
+        </div>
+      )}
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 pt-5 pb-12">
         {header}
         {children}

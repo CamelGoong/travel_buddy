@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -10,8 +10,13 @@ import type { ExpenseFormState } from "./actions";
 
 export function ExpenseForm({
   action,
+  idPrefix = "expense",
+  onSaved,
 }: {
   action: (prev: ExpenseFormState, formData: FormData) => Promise<ExpenseFormState>;
+  /** Keeps input ids unique when two forms share a page */
+  idPrefix?: string;
+  onSaved?: () => void;
 }) {
   const [state, formAction, pending] = useActionState(action, {
     error: null,
@@ -20,6 +25,9 @@ export function ExpenseForm({
     saved: 0,
   });
   const invalid = !!state.error || undefined;
+  useEffect(() => {
+    if (state.saved > 0) onSaved?.();
+  }, [state.saved, onSaved]);
   // Remount inputs after each result so they show the returned values.
   const key = `${state.saved}-${state.error ?? ""}`;
 
@@ -28,10 +36,10 @@ export function ExpenseForm({
       <FieldGroup className="gap-4">
         <div className="grid grid-cols-[1fr_1.2fr] gap-3">
           <Field data-invalid={invalid}>
-            <FieldLabel htmlFor="amount">금액 (엔)</FieldLabel>
+            <FieldLabel htmlFor={`${idPrefix}-amount`}>금액 (엔)</FieldLabel>
             <Input
               key={`a-${key}`}
-              id="amount"
+              id={`${idPrefix}-amount`}
               name="amount"
               inputMode="numeric"
               placeholder="1,280"
@@ -40,10 +48,10 @@ export function ExpenseForm({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="label">항목</FieldLabel>
+            <FieldLabel htmlFor={`${idPrefix}-label`}>항목</FieldLabel>
             <Input
               key={`l-${key}`}
-              id="label"
+              id={`${idPrefix}-label`}
               name="label"
               placeholder="점심"
               maxLength={30}

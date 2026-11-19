@@ -10,17 +10,21 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { formatKoreanDate } from "@/lib/tokyo-time";
 import { LogoutButton } from "@/features/auth";
+import { getChecklist } from "@/features/checklist";
 import { formatYen, getDayExpenses } from "@/features/expenses";
 import { dayStage, RouteLine } from "@/features/route-line";
 import { dateOfDay, placesForDay } from "@/features/trip";
 
 import { loadTripContext } from "../../context";
+import { SuggestionIsland } from "../../suggestion-island";
+import { loadIslandData } from "../../suggestions";
 import { recordExpense } from "./actions";
 import { ExpenseForm } from "./expense-form";
 
 export default async function DayPage({ params }: PageProps<"/trip/day/[day]">) {
   const { day } = await params;
-  const { trip, now, days, todayDay } = await loadTripContext(`/trip/day/${day}`);
+  const ctx = await loadTripContext(`/trip/day/${day}`);
+  const { trip, now, days, todayDay } = ctx;
 
   const dayNumber = Number(day);
   if (!Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > days) notFound();
@@ -28,12 +32,17 @@ export default async function DayPage({ params }: PageProps<"/trip/day/[day]">) 
   const date = dateOfDay(trip, dayNumber);
   const places = placesForDay(dayNumber);
   const model = dayStage({ dayNumber, dayDate: date, today: now.date, nowTime: now.time, places });
-  const expenses = await getDayExpenses(trip.id, dayNumber);
+  const [expenses, checklist] = await Promise.all([
+    getDayExpenses(trip.id, dayNumber),
+    getChecklist(trip.id),
+  ]);
+  const island = await loadIslandData(ctx, checklist, dayNumber);
   const total = expenses.reduce((sum, e) => sum + e.amountYen, 0);
 
   return (
     <AppShell
       routeLine={<RouteLine model={model} />}
+      suggestion={<SuggestionIsland data={island} />}
       header={
         <div className="flex flex-col gap-3">
           <Link href="/trip" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "-ml-2 w-fit")}>
@@ -97,7 +106,7 @@ export default async function DayPage({ params }: PageProps<"/trip/day/[day]">) 
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <ExpenseForm action={recordExpense.bind(null, trip.id, dayNumber)} />
+          <ExpenseForm idPrefix="day" action={recordExpense.bind(null, trip.id, dayNumber)} />
           {expenses.length > 0 && (
             <>
               <Separator />

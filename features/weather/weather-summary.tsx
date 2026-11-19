@@ -4,10 +4,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import type { DailyForecast } from "./forecast";
 
-function weatherLabel(code: number): string {
+/** Short sky description from a WMO weather code. */
+export function skyLabel(code: number): string {
   if (code === 0) return "맑음";
   if (code <= 3) return "구름 조금";
   if (code <= 48) return "흐리고 안개";
+  if (code <= 57) return "이슬비";
   if (code <= 67 || (code >= 80 && code <= 82)) return "비";
   if (code <= 77 || code === 85 || code === 86) return "눈";
   return "뇌우";
@@ -38,7 +40,7 @@ export function WeatherSummary({ forecast }: { forecast: DailyForecast | null })
       </div>
       <div className="rounded-lg bg-muted px-2 py-3">
         <dt className="text-xs text-muted-foreground">하늘</dt>
-        <dd className="text-lg font-semibold">{weatherLabel(forecast.weatherCode)}</dd>
+        <dd className="text-lg font-semibold">{skyLabel(forecast.weatherCode)}</dd>
       </div>
     </dl>
   );

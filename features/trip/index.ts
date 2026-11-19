@@ -1,4 +1,5 @@
 export { placesForDay, type Place, type CourseDay } from "./course";
+export { OSAKA_SPOTS, type OsakaSpot } from "./osaka-spots";
 export {
   buildCourse,
   dateOfDay,

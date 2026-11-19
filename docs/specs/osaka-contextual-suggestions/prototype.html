@@ -1,0 +1,389 @@
+<!--
+  prototype shell: the review chrome every prototype starts from.
+
+  Keep this comment in the prototype you grow from here: it is the contract,
+  and later turns work from that file rather than from this one.
+
+  Contract (extend product screens; keep the review shell):
+  - Product:  .sh-stage contains only end-user product UI. Keep review notes,
+               rationale, instructions, and approval controls in conversation.
+  - Screens:  <section data-screen="slug" data-title="Label"> inside .sh-stage.
+               The selector, arrow keys, and #hash routing build themselves.
+               Use one option per product destination or distinct surface,
+               named by its product role. Keep baselines, variants, comparison
+               labels, steps, indexes, and progress out of names and states.
+               Links may use href="#slug".
+  - States:   "Default" is automatic. A screen declares only representative
+               presets in data-states="Empty,Error". Use natural, screen-specific
+               names. Reserve presets for important multi-step results, forced
+               data or errors, or materially different structure; keep one-click
+               and transient states as interactions. Use data-when="Empty" on
+               preset-only elements. Call prototypeShell.setState("Name") on
+               entry and setState("Default") on exit, including when repeated
+               actions cross a preset condition.
+  - Viewport: "vp (m)" cycles full / 390 / 768. The 390 preset is a
+               fixed-height, internally scrolling phone frame. Start a
+               mobile-first prototype by adding class="sh-vp-390" to <body>
+               (or a bootstrap classList.add before the chrome script runs).
+  - Pinning:  keep in-frame bars (tab bars, CTAs) inside the phone with
+               position: sticky; position: fixed pins to the browser window.
+  - Tokens:   replace the project-tokens block with project tokens copied
+               verbatim. Map differing names to --background, --foreground, and
+               --font afterwards; replace network fonts with a system stack and
+               note that substitution. Without a design system, keep this
+               palette as the finished style. When the project ships dark
+               tokens, copy them under .sh-theme-dark, which the shell sets
+               on both the root element and body, so :root.sh-theme-dark and
+               body.sh-theme-dark work too. A .dark class or a
+               prefers-color-scheme media query copied verbatim would follow
+               the reviewer's system instead of the toggle.
+  - Theme:    the light / dark switch (t) changes the product surface only.
+               It appears only when a .sh-theme-dark rule declares dark tokens,
+               so a prototype without them carries no theme control. Prototypes
+               always load light; the review bar keeps its own dark styling in
+               both themes so it still reads as chrome.
+  - Placeholders: .wf-pic stands in for pictures the prototype has no real
+               files for. Use real text everywhere text belongs.
+
+  - Chrome:   Keep exactly the screen selector, selected-screen state selector,
+               viewport cycle, and theme toggle.
+
+  Self-contained by design: no build, no framework, no network.
+-->
+<meta charset="utf-8">
+<title>Travel Buddy · 상황별 제안</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* ── project tokens: app/globals.css (shadcn preset b3L1ZiPY0W), light ── */
+  :root {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.148 0.004 228.8);
+    --card: oklch(1 0 0);
+    --primary: oklch(0.52 0.105 223.128);
+    --primary-foreground: oklch(0.984 0.019 200.873);
+    --muted: oklch(0.963 0.002 197.1);
+    --muted-foreground: oklch(0.56 0.021 213.5);
+    --border: oklch(0.925 0.005 214.3);
+    --radius: 0.625rem;
+    /* Noto Serif / JetBrains Mono replaced by system stacks (no network) */
+    --font: "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    --font-mono: ui-monospace, Consolas, monospace;
+  }
+  .p { font-family: var(--font); color: var(--foreground); background: var(--background); position: relative; min-height: 640px; overflow: hidden; border-radius: 12px }
+  .p .rl { position: sticky; top: 0; background: color-mix(in oklch, var(--background) 90%, transparent); border-bottom: 1px solid var(--border); padding: 8px 16px 10px; z-index: 5 }
+  .p .rl .cap { font-size: 12px; color: var(--primary); font-weight: 600; margin: 0 0 6px }
+  .p .rl ol { display: flex; list-style: none; margin: 0; padding: 0 }
+  .p .rl li { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; color: var(--muted-foreground); position: relative }
+  .p .rl li::before { content: ""; position: absolute; top: 5px; left: 0; right: 0; height: 2px; background: var(--border) }
+  .p .rl li.past::before { background: var(--primary) }
+  .p .rl li .d { width: 10px; height: 10px; border-radius: 99px; border: 2px solid var(--border); background: var(--background); position: relative }
+  .p .rl li.past .d { background: var(--primary); border-color: var(--primary) }
+  .p .rl li.now .d { width: 12px; height: 12px; box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 25%, transparent) }
+  .p .rl li.now { color: var(--foreground); font-weight: 700 }
+  .p main { padding: 18px 16px 120px; display: flex; flex-direction: column; gap: 16px }
+  .p h1 { font-size: 22px; margin: 0 }
+  .p .eyebrow { color: var(--muted-foreground); font-size: 13px; margin: 0 0 4px }
+  .p .card { border: 1px solid var(--border); border-radius: calc(var(--radius) * 1.8); padding: 16px; box-shadow: 0 1px 2px rgb(0 0 0 / 4%) }
+  .p .card h2 { font-size: 15px; margin: 0 0 12px }
+  .p .row { display: flex; gap: 12px; padding: 8px 10px; border-radius: 8px; font-size: 14px }
+  .p .row .t { font-family: var(--font-mono); color: var(--muted-foreground); font-size: 13px }
+  .p .row.now { background: color-mix(in oklch, var(--primary) 10%, transparent); font-weight: 700 }
+  .p .btn { border: 0; border-radius: 99px; padding: 9px 14px; font: 600 13px var(--font); cursor: pointer }
+  .p .btn.pri { background: var(--primary); color: var(--primary-foreground) }
+  .p .btn.ghost { background: transparent; color: var(--muted-foreground) }
+  .p .done { font-size: 13px; color: var(--muted-foreground) }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px) scale(.98); filter: blur(4px) } to { opacity: 1; transform: none; filter: none } }
+  @keyframes drop { from { opacity: 0; transform: translateY(-10px) scaleX(.6) } to { opacity: 1; transform: none } }
+  @keyframes breathe { 0%,100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 35%, transparent) } 50% { box-shadow: 0 0 0 8px transparent } }
+  @keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+
+  /* A: bottom bubble that settles into a dot */
+  .a-nudge { position: absolute; left: 12px; right: 12px; bottom: 16px; z-index: 9; background: color-mix(in oklch, var(--card) 88%, transparent); backdrop-filter: blur(14px); border: 1px solid var(--border); border-radius: 22px; padding: 14px 14px 12px; box-shadow: 0 12px 32px rgb(0 0 0 / 12%); animation: rise .6s cubic-bezier(.2,.8,.2,1) both }
+  .a-nudge .who { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted-foreground) }
+  .a-nudge .who i { width: 8px; height: 8px; border-radius: 99px; background: var(--primary); animation: breathe 2.4s infinite }
+  .a-nudge p { margin: 6px 0 10px; font-size: 15px; line-height: 1.45 }
+  .a-nudge .acts { display: flex; gap: 6px; justify-content: flex-end }
+  .a-dot { position: absolute; right: 18px; bottom: 22px; z-index: 9; display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 99px; padding: 8px 12px; font-size: 12px; box-shadow: 0 6px 18px rgb(0 0 0 / 10%); cursor: pointer; animation: fadein .4s both }
+  .a-dot i { width: 8px; height: 8px; border-radius: 99px; background: var(--primary); animation: breathe 2.4s infinite }
+
+  /* B: island that drops from the route line */
+  .b-island { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); z-index: 9; width: calc(100% - 24px); max-width: 360px; background: oklch(0.2 0.01 228); color: oklch(0.97 0 0); border-radius: 26px; padding: 10px 14px; box-shadow: 0 14px 30px rgb(0 0 0 / 22%); animation: drop .5s cubic-bezier(.2,.8,.2,1) both; cursor: pointer }
+  .b-island .line { display: flex; align-items: center; gap: 10px; font-size: 14px }
+  .b-island .line i { width: 8px; height: 8px; border-radius: 99px; background: oklch(0.75 0.12 200); flex: none; animation: breathe 2.4s infinite }
+  .b-island .more { margin-top: 10px; display: flex; gap: 6px; justify-content: flex-end }
+  .b-island .btn.ghost { color: oklch(0.8 0 0) }
+
+  /* C: whisper line under the route line */
+  .c-whisper { position: sticky; top: 61px; z-index: 4; margin: 0; padding: 10px 16px; background: linear-gradient(90deg, color-mix(in oklch, var(--primary) 12%, transparent), transparent); font-size: 14px; color: var(--foreground); display: flex; align-items: center; gap: 10px; animation: fadein 1.2s both }
+  .c-whisper span { flex: 1; opacity: .85 }
+  .c-whisper a { color: var(--primary); font-weight: 700; text-decoration: none; cursor: pointer; white-space: nowrap }
+  .c-whisper .x { color: var(--muted-foreground); font-weight: 400 }
+
+  /* nudge: island under the route line, gradient + translucency (approved B2) */
+  .nudge { position: absolute; top: 64px; left: 12px; right: 12px; margin: 0 auto; z-index: 9; max-width: 366px;
+        background: linear-gradient(120deg, color-mix(in oklch, var(--primary) 26%, transparent), color-mix(in oklch, oklch(0.8 0.1 190) 18%, transparent) 60%, color-mix(in oklch, var(--background) 55%, transparent));
+        backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4);
+        border: 1px solid color-mix(in oklch, var(--background) 70%, transparent); border-radius: 24px; padding: 11px 14px;
+        box-shadow: 0 10px 28px color-mix(in oklch, var(--primary) 22%, transparent); color: var(--foreground);
+        animation: drop .55s cubic-bezier(.2,.8,.2,1) both; cursor: pointer }
+  .nudge .line { display: flex; align-items: center; gap: 10px; font-size: 14px }
+  .nudge .line i { width: 8px; height: 8px; border-radius: 99px; background: var(--primary); flex: none; animation: breathe 2.4s infinite }
+  .nudge .line span { flex: 1 }
+  .nudge .meta { font: 600 12px var(--font-mono); color: var(--primary); white-space: nowrap }
+  .nudge .body { margin: 10px 0 0; display: flex; flex-direction: column; gap: 10px; cursor: default }
+  .nudge .detail { margin: 0; font-size: 13px; color: var(--muted-foreground); line-height: 1.5 }
+  .nudge .acts { display: flex; gap: 6px; justify-content: flex-end }
+  .nudge .wx { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center }
+  .nudge .wx div { background: color-mix(in oklch, var(--background) 60%, transparent); border-radius: 12px; padding: 8px 4px; font-size: 11px; color: var(--muted-foreground) }
+  .nudge .wx b { display: block; font: 700 15px var(--font-mono); color: var(--foreground) }
+  .nudge ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px }
+  .nudge li { display: flex; gap: 10px; align-items: center }
+  .nudge li .t { font-family: var(--font-mono); color: var(--muted-foreground) }
+  .nudge li .go { margin-left: auto; color: var(--primary); font-weight: 700; font-size: 12px; cursor: pointer }
+  .nudge label { display: flex; gap: 8px; align-items: center; font-size: 13px }
+  .nudge input[type=checkbox] { accent-color: var(--primary); width: 16px; height: 16px }
+  .nudge .fields { display: grid; grid-template-columns: 1fr 1.2fr; gap: 6px }
+  .nudge .fields input { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font: 14px var(--font); background: color-mix(in oklch, var(--background) 80%, transparent) }
+  .nudge .err { color: oklch(0.577 0.245 27.325); font-size: 12px; margin: 0 }
+  .toast { position: absolute; top: 72px; left: 0; right: 0; text-align: center; font-size: 13px; color: var(--muted-foreground); animation: fadein .4s both }
+  .p .wx-inline { font-size: 13px; color: var(--muted-foreground) }
+
+  /* ── review chrome (sh-*): keep; extend product styles elsewhere ── */
+  * { box-sizing: border-box }
+  body {
+    margin: 0; padding: 0 0 40px;
+    background: var(--background, #f6f6f6); color: var(--foreground, #3a3a3a);
+    font-family: var(--font, system-ui, sans-serif);
+  }
+  .sh-bar {
+    position: sticky; top: 0; z-index: 999;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    padding: 8px 12px; background: #191a1c; color: #d7d7d7;
+    font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .sh-bar b, .sh-control-label { color: #8a8f98; font-weight: 500 }
+  .sh-control { display: inline-flex; gap: 5px; align-items: center }
+  .sh-bar button {
+    border: 1px solid #3a3d42; background: none; color: inherit;
+    font: inherit; padding: 2px 9px; border-radius: 99px; cursor: pointer;
+  }
+  .sh-bar select {
+    width: 170px; border: 1px solid #3a3d42; background: #232428; color: inherit;
+    font: inherit; padding: 3px 28px 3px 9px; border-radius: 7px; cursor: pointer;
+    color-scheme: dark;
+  }
+  #sh-screen { width: 190px }
+  .sh-bar button.on { background: #d7d7d7; color: #191a1c; border-color: #d7d7d7 }
+  .sh-theme { display: inline-flex; border: 1px solid #3a3d42; border-radius: 99px; overflow: hidden }
+  .sh-theme button { border: 0; border-radius: 0; padding: 2px 10px }
+  .sh-spacer { flex: 1 }
+  .sh-stage { max-width: 960px; margin: 0 auto; padding: 12px 16px 0 }
+  [hidden] { display: none !important }
+
+  /* viewport presets */
+  .sh-vp-390 .sh-stage {
+    max-width: 390px; background: var(--background, #f6f6f6);
+    border: 10px solid #191a1c; border-radius: 28px;
+    padding: 16px 12px; height: min(844px, calc(100dvh - 52px));
+    overflow-y: auto; margin-top: 12px;
+  }
+  .sh-vp-768 .sh-stage {
+    max-width: 768px; border: 1px solid #c4c4c4; border-radius: 12px;
+    padding: 16px; margin-top: 12px;
+  }
+
+  /* placeholders */
+  .wf-pic  { border-radius: 4px; background:
+             repeating-linear-gradient(45deg, #e9e9e9, #e9e9e9 6px, #f2f2f2 6px, #f2f2f2 12px) }
+  .sh-theme-dark .wf-pic { background: repeating-linear-gradient(45deg,
+             color-mix(in srgb, var(--foreground) 16%, transparent) 0 6px,
+             color-mix(in srgb, var(--foreground) 8%, transparent) 6px 12px) }
+</style>
+
+<header class="sh-bar">
+  <b>proto</b>
+  <label class="sh-control"><span class="sh-control-label">screen</span><select id="sh-screen"></select></label>
+  <span class="sh-spacer"></span>
+  <label class="sh-control"><span class="sh-control-label">state</span><select id="sh-state"></select></label>
+  <button id="sh-vp">vp: full (m)</button>
+  <div class="sh-theme" id="sh-theme" role="group" aria-label="theme (t)" hidden>
+    <button data-theme="light">light</button><button data-theme="dark">dark</button>
+  </div>
+</header>
+
+<main class="sh-stage">
+  <section data-screen="trip" data-title="여행 전체" data-states="아침 안내,아침 안내 · 날씨 실패,저녁 안내,위치 권한">
+    <div class="p" id="p-trip">
+      <div class="rl"><p class="cap">1일차</p><ol><li class="past"><span class="d"></span>출발 전</li><li class="past now"><span class="d"></span>1일차</li><li class=""><span class="d"></span>2일차</li><li class=""><span class="d"></span>3일차</li><li class=""><span class="d"></span>4일차</li><li class=""><span class="d"></span>5일차</li></ol></div>
+      <main>
+        <div><p class="eyebrow">11월 25일 (수) – 11월 29일 (일) · 4박 5일</p><h1>오사카 여행</h1></div>
+        <div class="card"><h2>출발 전 체크리스트 <span class="wx-inline">· 3/5 완료</span></h2>
+          <div class="row">✅ 여권</div><div class="row">✅ 항공권</div><div class="row">✅ 숙소 예약</div><div class="row">⬜ 교통패스</div><div class="row">⬜ 환전</div></div>
+        <div class="card"><h2>1일차 · 11월 25일 (수)</h2>
+          <div class="row"><span class="t">10:00</span>오사카성 천수각</div><div class="row"><span class="t">12:30</span>구로몬 시장</div><div class="row"><span class="t">15:00</span>신사이바시 쇼핑거리</div><div class="row"><span class="t">18:00</span>도톤보리</div></div>
+        <div class="card"><h2>2일차 · 11월 26일 (목)</h2>
+          <div class="row"><span class="t">09:00</span>유니버설 스튜디오 재팬</div><div class="row"><span class="t">19:30</span>우메다 공중정원 전망대</div></div>
+      </main>
+      <div class="nudge" id="n-morning" data-when="아침 안내"><div class="line"><i></i><span>좋은 아침! 오늘 15°에 맑아요. 코스 볼까요?</span><span class="meta">☀️ 1일차</span></div>
+        <div class="body" hidden><div class="wx"><div>최고·최저<b>15°/8°</b></div><div>강수<b>2%</b></div><div>하늘<b>맑음</b></div></div><p class="detail">👕 니트에 코트나 두툼한 자켓을 입어요.</p><ul><li><span class="t">10:00</span>오사카성 천수각</li><li><span class="t">12:30</span>구로몬 시장</li><li><span class="t">15:00</span>신사이바시 쇼핑거리</li><li><span class="t">18:00</span>도톤보리</li></ul><div class="acts"><button class="btn ghost" data-act="no">나중에</button><button class="btn pri" data-act="yes">오늘 시작할게요</button></div></div></div>
+      <div class="nudge" id="n-morning-fail" data-when="아침 안내 · 날씨 실패"><div class="line"><i></i><span>좋은 아침! 오늘은 1일차예요. 코스 볼까요?</span><span class="meta">☀️ 1일차</span></div>
+        <div class="body" hidden><p class="detail">☁️ 날씨를 불러오지 못했어요</p><ul><li><span class="t">10:00</span>오사카성 천수각</li><li><span class="t">12:30</span>구로몬 시장</li><li><span class="t">15:00</span>신사이바시 쇼핑거리</li><li><span class="t">18:00</span>도톤보리</li></ul><div class="acts"><button class="btn ghost" data-act="no">나중에</button><button class="btn pri" data-act="yes">오늘 시작할게요</button></div></div></div>
+      <div class="nudge" id="n-evening" data-when="저녁 안내"><div class="line"><i></i><span>내일은 USJ 가는 날! 챙길 것 볼까요?</span><span class="meta">🌙 2일차</span></div>
+        <div class="body" hidden><p class="detail">09:00 유니버설 스튜디오 재팬 → 19:30 우메다 공중정원 전망대</p><div class="wx"><div>최고·최저<b>13°/6°</b></div><div>강수<b>60%</b></div><div>하늘<b>비</b></div></div><label><input type="checkbox"> 우산 챙기기</label><label><input type="checkbox" checked> 휴대폰·보조배터리 충전하기</label><div class="acts"><button class="btn ghost" data-act="no">닫기</button><button class="btn pri" data-act="yes">확인, 내일 봐요</button></div></div></div>
+      <div class="nudge" id="n-perm" data-when="위치 권한"><div class="line"><i></i><span>근처 추천을 받으려면 위치가 필요해요. 켜 볼까요?</span><span class="meta">📍</span></div>
+        <div class="body" hidden><p class="detail">위치는 다음 장소까지 걸리는 시간과 근처 명소를 고를 때만 써요. 저장하지 않아요.</p><div class="acts"><button class="btn ghost" data-act="no">나중에</button><button class="btn pri" data-act="yes">켜 볼게요</button></div></div></div>
+      <p class="toast" id="trip-toast" hidden></p>
+    </div>
+  </section>
+  <section data-screen="day" data-title="일차" data-states="주변 명소,여비 기록,제안 없음">
+    <div class="p" id="p-day">
+      <div class="rl"><p class="cap">구로몬 시장 · 다음 15:00</p><ol><li class="past"><span class="d"></span>10:00</li><li class="past now"><span class="d"></span>12:30</li><li><span class="d"></span>15:00</li><li><span class="d"></span>18:00</li></ol></div>
+      <main>
+        <div><p class="eyebrow">11월 25일 (수)</p><h1>1일차</h1></div>
+        <div class="card"><h2>오늘 코스</h2>
+          <div class="row"><span class="t">10:00</span>오사카성 천수각</div>
+          <div class="row now"><span class="t">12:30</span>구로몬 시장</div>
+          <div class="row"><span class="t">15:00</span>신사이바시 쇼핑거리</div>
+          <div class="row"><span class="t">18:00</span>도톤보리</div></div>
+        <div class="card"><h2>이날 여비 <span class="wx-inline">· 합계 <b id="day-total">1,280엔</b></span></h2><div id="day-list"><div class="row">점심 · 1,280엔</div></div></div>
+      </main>
+      <div class="nudge" id="n-next" data-when="Default"><div class="line"><i></i><span>신사이바시로 슬슬 출발해 볼까요?</span><span class="meta">🚇 약 12분</span></div>
+        <div class="body" hidden><p class="detail">지금 위치에서 대중교통으로 약 12분이에요. 15:00 신사이바시 쇼핑거리 일정에 맞추려면 지금 나서면 딱 좋아요.</p><div class="acts"><button class="btn ghost" data-act="no">나중에</button><button class="btn pri" data-act="yes">길 보여줘</button></div></div></div>
+      <div class="nudge" id="n-near" data-when="주변 명소"><div class="line"><i></i><span>근처에 호젠지 요코초가 있어요. 들러 볼까요?</span><span class="meta">🚶 7분</span></div>
+        <div class="body" hidden><ul><li>호젠지 요코초<span class="t">560m · 도보 7분</span><span class="go" data-act="yes">길 보기</span></li><li>난바 야사카 신사<span class="t">900m · 도보 12분</span><span class="go" data-act="yes">길 보기</span></li></ul><div class="acts"><button class="btn pri" data-act="no">괜찮아요</button></div></div></div>
+      <div class="nudge" id="n-exp" data-when="여비 기록"><div class="line"><i></i><span>점심 먹었어요? 기록해 둘까요?</span><span class="meta">🍜 13:30</span></div>
+        <div class="body" hidden><div class="fields"><input id="exp-amt" inputmode="numeric" placeholder="금액 (엔)"><input id="exp-lbl" placeholder="점심"></div><p class="err" id="exp-err" hidden></p><div class="acts"><button class="btn ghost" data-act="no">나중에</button><button class="btn pri" data-act="yes">기록하기</button></div></div></div>
+      <p class="toast" id="day-toast" hidden></p>
+    </div>
+  </section>
+</main>
+
+<script>
+  document.body.classList.add('sh-vp-390');
+  const stage = document.querySelector('.sh-stage');
+  const screens = [...stage.querySelectorAll('[data-screen]')];
+  const screenSelect = document.getElementById('sh-screen');
+  const stateSelect = document.getElementById('sh-state');
+  const vpBtn = document.getElementById('sh-vp');
+  const themeCtl = document.getElementById('sh-theme');
+  const themeBtns = [...themeCtl.querySelectorAll('button')];
+  let current = null;
+  let currentStates = [];
+
+  screens.forEach(s => {
+    const option = document.createElement('option');
+    option.textContent = s.dataset.title || s.dataset.screen;
+    option.value = s.dataset.screen;
+    screenSelect.append(option);
+  });
+  screenSelect.onchange = () => show(screenSelect.value);
+
+  function show(slug) {
+    current = screens.find(s => s.dataset.screen === slug) || screens[0];
+    screens.forEach(s => s.hidden = s !== current);
+    screenSelect.value = current.dataset.screen;
+    history.replaceState(null, '', '#' + current.dataset.screen);
+    buildStates();
+  }
+
+  function buildStates() {
+    const declared = (current.dataset.states || '').split(',').map(x => x.trim()).filter(Boolean);
+    currentStates = ['Default', ...declared.filter(name => name !== 'Default')];
+    stateSelect.innerHTML = '';
+    currentStates.forEach(name => {
+      const option = document.createElement('option');
+      option.textContent = name;
+      option.value = name;
+      stateSelect.append(option);
+    });
+    applyState('Default');
+  }
+
+  function applyState(name) {
+    const active = currentStates.includes(name) ? name : 'Default';
+    current.querySelectorAll('[data-when]').forEach(el => {
+      el.hidden = !el.dataset.when.split(',').map(x => x.trim()).includes(active);
+    });
+    stateSelect.value = active;
+  }
+  stateSelect.onchange = () => applyState(stateSelect.value);
+
+  window.prototypeShell = {
+    showScreen: show,
+    setState: applyState,
+    getScreen: () => current?.dataset.screen,
+    getState: () => stateSelect.value
+  };
+
+  const VPS = ['full', '390', '768'];
+  let vp = VPS.find(v => document.body.classList.contains('sh-vp-' + v)) || 'full';
+  function applyVp() {
+    VPS.forEach(v => document.body.classList.toggle('sh-vp-' + v, v === vp && v !== 'full'));
+    vpBtn.textContent = 'vp: ' + vp + ' (m)';
+    vpBtn.classList.toggle('on', vp !== 'full');
+  }
+  vpBtn.onclick = () => { vp = VPS[(VPS.indexOf(vp) + 1) % VPS.length]; applyVp(); };
+  applyVp();
+
+  const hasDark = [...document.styleSheets].some(sheet => {
+    try {
+      return [...sheet.cssRules].some(rule => (rule.selectorText || '')
+        .split(',').some(part => /\.sh-theme-dark$/.test(part.trim())));
+    } catch { return false }
+  });
+  let dark = false;
+  function applyTheme() {
+    document.documentElement.classList.toggle('sh-theme-dark', dark);
+    document.body.classList.toggle('sh-theme-dark', dark);
+    themeBtns.forEach(b => b.classList.toggle('on', (b.dataset.theme === 'dark') === dark));
+  }
+  themeCtl.hidden = !hasDark;
+  themeBtns.forEach(b => b.onclick = () => { dark = b.dataset.theme === 'dark'; applyTheme(); });
+  applyTheme();
+
+  addEventListener('keydown', e => {
+    if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    const i = screens.indexOf(current);
+    if (e.key === 'ArrowRight') show(screens[(i + 1) % screens.length].dataset.screen);
+    if (e.key === 'ArrowLeft') show(screens[(i - 1 + screens.length) % screens.length].dataset.screen);
+    if (e.key === 'm') vpBtn.click();
+    if (e.key === 't' && !themeCtl.hidden) { dark = !dark; applyTheme(); }
+  });
+
+  addEventListener('hashchange', () => show(location.hash.slice(1)));
+  show(location.hash.slice(1));
+</script>
+
+<script>
+  // product interactions: tap the island to expand; buttons resolve the nudge
+  document.querySelectorAll('.nudge').forEach(n => {
+    n.addEventListener('click', e => {
+      const act = e.target.dataset.act;
+      const body = n.querySelector('.body');
+      if (!act) { if (body.hidden && !e.target.closest('.body')) body.hidden = false; return; }
+      const toast = n.closest('.p').querySelector('.toast');
+      if (n.id === 'n-exp' && act === 'yes') {
+        const amt = document.getElementById('exp-amt').value.replace(/[,\s]/g, '');
+        const err = document.getElementById('exp-err');
+        if (!amt || Number(amt) <= 0) { err.textContent = '금액은 0엔보다 커야 해요.'; err.hidden = false; return; }
+        const lbl = document.getElementById('exp-lbl').value.trim() || '점심';
+        document.getElementById('day-list').insertAdjacentHTML('beforeend', `<div class="row">${lbl} · ${Number(amt).toLocaleString('ko-KR')}엔</div>`);
+        document.getElementById('day-total').textContent = (1280 + Number(amt)).toLocaleString('ko-KR') + '엔';
+      }
+      n.hidden = true;
+      const msg = {
+        'n-morning': '1일차 화면으로 이동해요', 'n-morning-fail': '1일차 화면으로 이동해요',
+        'n-evening': '내일 봐요, 푹 자요', 'n-perm': '브라우저가 위치 권한을 물어봐요',
+        'n-next': 'Google 지도에서 경로를 열었어요', 'n-near': 'Google 지도에서 경로를 열었어요',
+        'n-exp': '기록했어요'
+      }[n.id];
+      toast.textContent = act === 'yes' ? msg : '알겠어요, 이 상황에선 다시 안 물어볼게요';
+      toast.hidden = false;
+    });
+  });
+  // reset nudges whenever a state preset is chosen
+  document.getElementById('sh-state')?.addEventListener('change', () => {
+    document.querySelectorAll('.nudge .body').forEach(b => b.hidden = true);
+    document.querySelectorAll('.toast').forEach(t => t.hidden = true);
+  });
+</script>

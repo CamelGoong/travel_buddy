@@ -8,24 +8,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FieldGroup } from "@/components/ui/field";
 import { formatKoreanDate } from "@/lib/tokyo-time";
 import { LogoutButton } from "@/features/auth";
-import { buildPrepItems, decideBriefing, getDismissedToday, getPrepChecks } from "@/features/briefing";
 import { getChecklist } from "@/features/checklist";
 import { RouteLine, tripStage } from "@/features/route-line";
-import { buildCourse, placesForDay } from "@/features/trip";
-import { outfitLine, WeatherSummary } from "@/features/weather";
+import { buildCourse } from "@/features/trip";
 
-import { confirmEvening, confirmMorning, toggleChecklistItem, togglePrepItem } from "./actions";
+import { toggleChecklistItem } from "./actions";
 import { CheckRow } from "./check-row";
-import { loadForecast, loadTripContext } from "./context";
+import { loadTripContext } from "./context";
+import { SuggestionIsland } from "./suggestion-island";
+import { loadIslandData } from "./suggestions";
 
 export default async function TripPage() {
   const ctx = await loadTripContext();
-  const { trip, now, days, todayDay, tomorrowDay } = ctx;
+  const { trip, now, days, todayDay } = ctx;
 
-  const [checklist, dismissedToday] = await Promise.all([
-    getChecklist(trip.id),
-    getDismissedToday(trip.id, now.date),
-  ]);
+  const checklist = await getChecklist(trip.id);
+  const island = await loadIslandData(ctx, checklist, null);
 
   const routeLine = (
     <RouteLine model={tripStage({ today: now.date, startDate: trip.startDate, dayCount: days })} />
@@ -47,107 +45,15 @@ export default async function TripPage() {
     />
   );
 
-  const briefing = decideBriefing({
-    nowTime: now.time,
-    todayIsTripDay: todayDay !== null,
-    tomorrowIsTripDay: tomorrowDay !== null,
-    dismissedToday,
-  });
-
-  if (briefing === "morning" && todayDay !== null) {
-    const forecast = await loadForecast(now.date);
-    const places = placesForDay(todayDay);
-    return (
-      <AppShell routeLine={routeLine} header={header}>
-        <Card data-testid="morning-briefing">
-          <CardHeader>
-            <CardDescription>아침 안내 · {formatKoreanDate(now.date)}</CardDescription>
-            <CardTitle className="text-xl">좋은 아침! 오늘은 {todayDay}일차예요 ☀️</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-5">
-            <WeatherSummary forecast={forecast} />
-            {forecast && <p className="font-medium">👕 {outfitLine(forecast)}</p>}
-            <section className="flex flex-col gap-2">
-              <h2 className="text-sm font-semibold text-muted-foreground">오늘 갈 곳</h2>
-              <PlaceList places={places} />
-            </section>
-            <form action={confirmMorning}>
-              <button type="submit" className={buttonVariants({ size: "lg", className: "w-full" })}>
-                확인, 오늘 시작할게요
-              </button>
-            </form>
-          </CardContent>
-        </Card>
-      </AppShell>
-    );
-  }
-
-  if (briefing === "evening" && tomorrowDay !== null) {
-    const [forecast, checks] = await Promise.all([
-      loadForecast(ctx.tomorrow),
-      getPrepChecks(trip.id, ctx.tomorrow),
-    ]);
-    const prepItems = buildPrepItems({
-      tomorrowIsFirstDay: tomorrowDay === 1,
-      todayIsTripDay: todayDay !== null,
-      tomorrowRainChance: forecast?.rainChance ?? null,
-      checklist,
-      checks,
-    });
-    const places = placesForDay(tomorrowDay);
-    return (
-      <AppShell routeLine={routeLine} header={header}>
-        <Card data-testid="evening-briefing">
-          <CardHeader>
-            <CardDescription>저녁 안내 · 내일 {formatKoreanDate(ctx.tomorrow)}</CardDescription>
-            <CardTitle className="text-xl">내일은 {tomorrowDay}일차예요 🌙</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-5">
-            <section className="flex flex-col gap-2">
-              <h2 className="text-sm font-semibold text-muted-foreground">내일 코스 한눈에</h2>
-              {places.length > 0 ? (
-                <p className="leading-relaxed" data-testid="tomorrow-summary">
-                  {places.map((p) => `${p.time} ${p.name}`).join(" → ")}
-                </p>
-              ) : (
-                <p className="text-muted-foreground">내일은 자유 일정이에요.</p>
-              )}
-            </section>
-            <WeatherSummary forecast={forecast} />
-            <section className="flex flex-col gap-3">
-              <h2 className="text-sm font-semibold text-muted-foreground">자기 전에 챙겨요</h2>
-              {prepItems.length > 0 ? (
-                <FieldGroup className="gap-3" data-testid="prep-items">
-                  {prepItems.map((item) => (
-                    <CheckRow
-                      key={item.key}
-                      id={`prep-${item.key}`}
-                      label={item.label}
-                      defaultChecked={item.done}
-                      onToggle={togglePrepItem.bind(null, trip.id, item.key, item.checklistItemId ?? null)}
-                    />
-                  ))}
-                </FieldGroup>
-              ) : (
-                <p className="text-muted-foreground">챙길 게 없어요. 푹 자요!</p>
-              )}
-            </section>
-            <form action={confirmEvening}>
-              <button type="submit" className={buttonVariants({ size: "lg", className: "w-full" })}>
-                확인, 내일 봐요
-              </button>
-            </form>
-          </CardContent>
-        </Card>
-      </AppShell>
-    );
-  }
-
   const course = buildCourse(trip);
   const doneCount = checklist.filter((i) => i.done).length;
 
   return (
-    <AppShell routeLine={routeLine} header={header}>
+    <AppShell
+      routeLine={routeLine}
+      suggestion={<SuggestionIsland data={island} />}
+      header={header}
+    >
       <Card>
         <CardHeader>
           <CardTitle>출발 전 체크리스트</CardTitle>

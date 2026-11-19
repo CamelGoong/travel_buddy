@@ -4,5 +4,5 @@
 
 - `app/trip/new/actions.ts`: 여행 insert와 체크리스트 insert가 한 트랜잭션이 아니다. 체크리스트 insert만 실패하면 체크리스트 없는 여행이 남고, 다시 제출하면 여행이 하나 더 생긴다. DB 함수(RPC)나 trips insert 트리거로 묶는 방안을 검토한다.
 - `app/trip/check-row.tsx`: 저장 실패를 무시하고 체크 상태를 유지한다. 실패하면 되돌리고 짧은 오류를 보여 주는 방안을 검토한다.
-- `app/dev/sim/route.ts`: `to` 값이 `//host`이면 외부로 리다이렉트된다. 개발 서버 전용이지만 `//`로 시작하는 값은 막는 편이 낫다.
 - Supabase advisors 경고 2건: 대시보드의 "Enable RLS on new tables automatically" 옵션이 만든 `public.rls_auto_enable()`(SECURITY DEFINER)를 `anon`·`authenticated`가 RPC로 실행할 수 있다. 이 저장소 마이그레이션의 산물이 아니므로 대시보드 옵션의 의도를 확인한 뒤 `EXECUTE` 회수 여부를 정한다.
+- `app/trip/suggestion-island.tsx`(osaka-contextual-suggestions 리뷰): 제안 실행·미룸 기록(`resolveSuggestion`)을 기다리지 않고 섬을 닫는다. 저장에 실패하면 다음에 열 때 같은 제안이 다시 뜬다. 실패하면 다시 시도하거나 짧게 알려 주는 방안을 검토한다.
