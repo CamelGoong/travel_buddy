@@ -4,6 +4,7 @@ export {
   estimateTravel,
   formatEstimate,
   mapsDirectionsUrl,
+  mapsSearchUrl,
   type LatLng,
   type TravelEstimate,
 } from "@/lib/geo";

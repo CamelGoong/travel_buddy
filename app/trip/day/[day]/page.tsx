@@ -34,6 +34,7 @@ import {
   routeLegs,
 } from "@/features/trip";
 import { CollapsibleList } from "@/components/collapsible-list";
+import { mapsSearchUrl } from "@/lib/geo";
 
 import { AppNav } from "../../../app-nav";
 import { summarizeBudget } from "../../budget";
@@ -166,7 +167,15 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
                   aria-current={i === model.activeIndex ? "step" : undefined}
                 >
                   <span className="font-heading text-sm text-muted-foreground tabular-nums">{p.time}</span>
-                  <span>{p.name}</span>
+                  <a
+                    href={mapsSearchUrl(p.name)}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`${p.name} 구글지도에서 보기`}
+                    className="min-w-0 flex-1 underline-offset-4 hover:underline focus-visible:underline"
+                  >
+                    {p.name}
+                  </a>
                   {i === model.activeIndex && <Badge className="ml-auto">지금</Badge>}
                 </li>
               ))}

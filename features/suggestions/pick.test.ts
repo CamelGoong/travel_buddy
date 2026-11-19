@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { estimateTravel, mapsDirectionsUrl } from "@/lib/geo";
+import { estimateTravel, mapsDirectionsUrl, mapsSearchUrl } from "@/lib/geo";
 import { pickSuggestion, type PickInput } from "./pick";
 
 const places = [
@@ -269,5 +269,14 @@ describe("before-trip nudges (pre-trip-nudges AC5–AC8)", () => {
   it("lets the evening briefing come first the night before", () => {
     const eve = { ...pre, tomorrowIsTripDay: true, nowTime: "20:30" };
     expect(pickSuggestion(eve)?.kind).toBe("evening");
+  });
+});
+
+describe("mapsSearchUrl", () => {
+  it("opens a Google Maps search for the place name", () => {
+    const url = new URL(mapsSearchUrl(" 도톤보리 "));
+    expect(url.origin + url.pathname).toBe("https://www.google.com/maps/search/");
+    expect(url.searchParams.get("query")).toBe("도톤보리 오사카");
+    expect(url.searchParams.get("api")).toBe("1");
   });
 });
