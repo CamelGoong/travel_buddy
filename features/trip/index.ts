@@ -26,6 +26,16 @@ export {
   type NewTrip,
 } from "./mutations";
 export {
+  describeLeg,
+  googleRouteUrl,
+  inServiceArea,
+  mappablePlaces,
+  routeLegs,
+  SERVICE_AREA,
+  type Leg,
+  type MapPlace,
+} from "./route-map";
+export {
   addPlace,
   defaultNewTime,
   MAX_PLACE_NAME,

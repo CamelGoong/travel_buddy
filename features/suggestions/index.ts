@@ -6,7 +6,7 @@ export {
   mapsDirectionsUrl,
   type LatLng,
   type TravelEstimate,
-} from "./geo";
+} from "@/lib/geo";
 export {
   EVENING_FROM,
   pickSuggestion,
