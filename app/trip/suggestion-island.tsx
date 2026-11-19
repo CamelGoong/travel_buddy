@@ -48,6 +48,8 @@ export function SuggestionIsland({ data }: { data: IslandData }) {
         resolvedToday: new Set(data.resolvedToday),
         lastNearbyAt: data.lastNearbyAt,
         budgetAheadOfPace: data.budget?.aheadOfPace ?? false,
+        flightDocsToday: data.flightFiles.length > 0,
+        ticketPlaceNames: new Set(data.tickets.map((t) => t.placeName)),
       }),
     [data, location, permission],
   );
@@ -231,6 +233,25 @@ export function SuggestionIsland({ data }: { data: IslandData }) {
       );
       break;
     }
+    case "flight": {
+      body = (
+        <>
+          <FileLinks files={data.flightFiles} onOpen={() => resolve(suggestion)} />
+          <Actions>{later()}</Actions>
+        </>
+      );
+      break;
+    }
+    case "ticket": {
+      const files = data.tickets.find((t) => t.placeName === suggestion.place.name)?.files ?? [];
+      body = (
+        <>
+          <FileLinks files={files} onOpen={() => resolve(suggestion)} />
+          <Actions>{later()}</Actions>
+        </>
+      );
+      break;
+    }
     case "location": {
       body = (
         <>
@@ -326,9 +347,34 @@ function describe(s: Suggestion, data: IslandData): { line: string; meta: string
         meta: `💸 ${Math.round((b.spent / b.budgetYen) * 100)}%`,
       };
     }
+    case "flight":
+      return { line: "오늘 비행기 타는 날! 항공권 꺼내 둘까요?", meta: "✈️ 항공권" };
+    case "ticket":
+      return { line: `${s.place.name} 도착! 입장권 보여 줄까요?`, meta: "🎟️ 입장권" };
     case "location":
       return { line: "근처 추천을 받으려면 위치가 필요해요. 켜 볼까요?", meta: "📍" };
   }
+}
+
+/** Uploaded files that open in a new tab; opening one counts as acting on the suggestion. */
+function FileLinks({ files, onOpen }: { files: { id: number; fileName: string }[]; onOpen: () => void }) {
+  return (
+    <ul className="flex flex-col gap-2 text-sm" data-testid="suggestion-files">
+      {files.map((f) => (
+        <li key={f.id}>
+          <a
+            href={`/trip/documents/file/${f.id}`}
+            target="_blank"
+            rel="noopener"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+            onClick={onOpen}
+          >
+            {f.fileName}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function Actions({ children }: { children: ReactNode }) {

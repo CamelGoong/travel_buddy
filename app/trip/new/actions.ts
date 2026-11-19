@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 
+import { rememberTrip } from "@/app/trips/actions";
+
 import { parseBudget } from "@/features/budget";
 import { toTokyoNow } from "@/lib/tokyo-time";
 import { parsePreferences } from "@/features/ai-course";
@@ -64,6 +66,7 @@ export async function createTrip(
     };
     const tripId = await insertTrip(trip);
     await createDefaultChecklist(tripId);
+    await rememberTrip(tripId);
     // Suggestions are a bonus; the trip must not fail because of them.
     await createChecklistSuggestions(tripId, generated.suggestions).catch(() => {});
   } catch {

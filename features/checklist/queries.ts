@@ -111,3 +111,15 @@ export async function dismissSuggestion(suggestionId: number): Promise<void> {
     .eq("status", "pending");
   if (error) throw error;
 }
+
+/** Marks the checklist item with this key done; a no-op when it is missing or already done. */
+export async function completeChecklistItemByKey(tripId: number, itemKey: string): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("checklist_items")
+    .update({ done: true })
+    .eq("trip_id", tripId)
+    .eq("item_key", itemKey)
+    .eq("done", false);
+  if (error) throw error;
+}

@@ -2,6 +2,7 @@ export { DEFAULT_CHECKLIST } from "./defaults";
 export {
   addSuggestionToChecklist,
   createChecklistSuggestions,
+  completeChecklistItemByKey,
   createDefaultChecklist,
   dismissSuggestion,
   getPendingSuggestions,

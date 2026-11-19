@@ -8,6 +8,8 @@ export type SuggestionKind =
   | "next_place"
   | "expense"
   | "budget_pace"
+  | "flight"
+  | "ticket"
   | "location"
   | "nearby";
 
@@ -30,6 +32,8 @@ export type Suggestion =
     }
   | { kind: "expense"; context: "lunch" | "dinner" }
   | { kind: "budget_pace"; context: "" }
+  | { kind: "flight"; context: "" }
+  | { kind: "ticket"; context: string; place: TimedPlace }
   | { kind: "location"; context: "" }
   | { kind: "nearby"; context: string; spots: NearbySpot[] };
 
@@ -61,6 +65,10 @@ export type PickInput = {
   lastNearbyAt: string | null;
   /** Budget spent share runs 15%p or more ahead of the elapsed days */
   budgetAheadOfPace: boolean;
+  /** Today is the first or last trip day and the flight slot has a file */
+  flightDocsToday: boolean;
+  /** Names of today's places that have an entry ticket linked */
+  ticketPlaceNames: ReadonlySet<string>;
 };
 
 const key = (kind: SuggestionKind, context = "") => `${kind}:${context}`;
@@ -106,6 +114,18 @@ function nextPlace(input: PickInput): Suggestion | null {
   return null;
 }
 
+function ticket(input: PickInput): Suggestion | null {
+  if (!input.location || input.ticketPlaceNames.size === 0) return null;
+  for (const place of input.todayPlaces) {
+    if (!input.ticketPlaceNames.has(place.name)) continue;
+    if (input.resolvedToday.has(key("ticket", place.name))) continue;
+    if (distanceMeters(input.location, place) <= ARRIVAL_RADIUS_M) {
+      return { kind: "ticket", context: place.name, place };
+    }
+  }
+  return null;
+}
+
 function nearby(input: PickInput): Suggestion | null {
   if (!input.location) return null;
   if (input.lastNearbyAt) {
@@ -136,8 +156,15 @@ export function pickSuggestion(input: PickInput): Suggestion | null {
 
   if (input.todayIsTripDay && !done("morning")) return { kind: "morning", context: "" };
 
+  if (input.flightDocsToday && !done("flight")) return { kind: "flight", context: "" };
+
   if (input.tomorrowIsTripDay && input.nowTime >= EVENING_FROM && !done("evening")) {
     return { kind: "evening", context: "" };
+  }
+
+  if (input.todayIsTripDay) {
+    const entry = ticket(input);
+    if (entry) return entry;
   }
 
   if (input.onTodayDayScreen) {

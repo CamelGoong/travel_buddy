@@ -28,6 +28,8 @@ const base: PickInput = {
   resolvedToday: new Set(["morning:"]),
   lastNearbyAt: null,
   budgetAheadOfPace: false,
+  flightDocsToday: false,
+  ticketPlaceNames: new Set(),
 };
 const resolved = (...keys: string[]) => new Set(["morning:", ...keys]);
 /** Meals already asked, so time-window tests see only the suggestion under test. */
@@ -165,5 +167,41 @@ describe("budget pace (osaka-trip-budget AC7–AC9)", () => {
   it("comes right after the meal prompt and before the location ask", () => {
     expect(pickSuggestion({ ...paced, nowTime: "13:30" })?.kind).toBe("expense");
     expect(pickSuggestion({ ...paced, onTodayDayScreen: true, permission: "prompt", resolvedToday: fed() })?.kind).toBe("budget_pace");
+  });
+});
+
+describe("document suggestions (trip-documents AC10–AC12)", () => {
+  const usj = { name: "도톤보리", time: "18:00", lat: 34.66868, lng: 135.50278 };
+  const at = { permission: "granted" as const, location: { lat: usj.lat, lng: usj.lng } };
+
+  it("shows the flight island on a flight day until resolved", () => {
+    const flight = { ...base, flightDocsToday: true };
+    expect(pickSuggestion(flight)?.kind).toBe("flight");
+    expect(pickSuggestion({ ...flight, resolvedToday: resolved("flight:") })).toBeNull();
+    expect(pickSuggestion(base)).toBeNull();
+  });
+  it("shows the ticket island within 200 m of a linked place, once", () => {
+    const input = { ...base, ...at, ticketPlaceNames: new Set([usj.name]), resolvedToday: fed() };
+    expect(pickSuggestion(input)).toMatchObject({ kind: "ticket", context: usj.name });
+    expect(pickSuggestion({ ...input, resolvedToday: fed(`ticket:${usj.name}`) })?.kind).not.toBe("ticket");
+    expect(pickSuggestion({ ...input, ticketPlaceNames: new Set(["구로몬 시장"]) })?.kind).not.toBe("ticket");
+    expect(pickSuggestion({ ...input, location: { lat: 34.7, lng: 135.49 } })?.kind).not.toBe("ticket");
+    expect(pickSuggestion({ ...input, todayIsTripDay: false })?.kind).not.toBe("ticket");
+  });
+  it("orders morning, flight, evening, ticket, next place", () => {
+    const all = {
+      ...base,
+      ...at,
+      nowTime: "20:30",
+      flightDocsToday: true,
+      ticketPlaceNames: new Set([usj.name]),
+      resolvedToday: new Set<string>(),
+    };
+    expect(pickSuggestion(all)?.kind).toBe("morning");
+    expect(pickSuggestion({ ...all, resolvedToday: new Set(["morning:"]) })?.kind).toBe("flight");
+    expect(pickSuggestion({ ...all, resolvedToday: new Set(["morning:", "flight:"]) })?.kind).toBe("evening");
+    expect(
+      pickSuggestion({ ...all, resolvedToday: new Set(["morning:", "flight:", "evening:"]) })?.kind,
+    ).toBe("ticket");
   });
 });

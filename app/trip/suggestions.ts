@@ -1,6 +1,7 @@
 import { getDevLocation, type DevLocation } from "@/lib/clock";
 import { buildPrepItems, getPrepChecks, type PrepItem } from "@/features/briefing";
 import type { ChecklistItem } from "@/features/checklist";
+import { getVault } from "@/features/documents/store";
 import { EVENING_FROM, type Spot, type TimedPlace } from "@/features/suggestions";
 import { getSuggestionRecords } from "@/features/suggestions/server";
 import { OSAKA_SPOTS, placesOfDay, type Place } from "@/features/trip";
@@ -25,7 +26,13 @@ export type IslandData = {
   morning: { places: Place[]; forecast: DailyForecast | null; outfit: string | null } | null;
   evening: { places: Place[]; forecast: DailyForecast | null; prepItems: PrepItem[] } | null;
   budget: BudgetSummary | null;
+  /** Flight files, only on the first and last trip day */
+  flightFiles: LinkedFile[];
+  /** Entry tickets linked to today's places */
+  tickets: { placeName: string; files: LinkedFile[] }[];
 };
+
+export type LinkedFile = { id: number; fileName: string };
 
 /** Server-side part of the suggestions: records, briefings and weather when they may show. */
 export async function loadIslandData(
@@ -40,6 +47,21 @@ export async function loadIslandData(
     getDevLocation(),
   ]);
   const resolved = new Set(records.resolvedToday);
+
+  const vault = todayDay !== null ? await getVault(trip.id) : [];
+  const isFlightDay = todayDay === 1 || (todayDay !== null && todayDay === ctx.days);
+  const toLinked = (f: { id: number; fileName: string }) => ({ id: f.id, fileName: f.fileName });
+  const flightFiles = isFlightDay
+    ? (vault.find((slot) => slot.kind === "flight")?.files ?? []).map(toLinked)
+    : [];
+  const todayPlaces = todayDay ? placesOfDay(trip, todayDay) : [];
+  const ticketFiles = vault.find((slot) => slot.kind === "ticket")?.files ?? [];
+  const tickets = todayPlaces
+    .map((place) => ({
+      placeName: place.name,
+      files: ticketFiles.filter((f) => f.placeName === place.name).map(toLinked),
+    }))
+    .filter((t) => t.files.length > 0);
 
   const morningDue = todayDay !== null && !resolved.has("morning:");
   const eveningDue = tomorrowDay !== null && now.time >= EVENING_FROM && !resolved.has("evening:");
@@ -57,12 +79,14 @@ export async function loadIslandData(
     todayDay,
     tomorrowDay,
     onTodayDayScreen: dayScreen !== null && dayScreen === todayDay,
-    todayPlaces: todayDay ? placesOfDay(trip, todayDay) : [],
+    todayPlaces,
     spots: OSAKA_SPOTS,
     resolvedToday: records.resolvedToday,
     lastNearbyAt: records.lastNearbyAt,
     devLocation,
     budget,
+    flightFiles,
+    tickets,
     morning:
       morningDue && todayDay
         ? {

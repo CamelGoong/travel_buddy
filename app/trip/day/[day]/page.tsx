@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RiArrowLeftSLine } from "@remixicon/react";
 
-import { AppShell, PageHeader } from "@/components/app-shell";
+import { AppShell, HomeLink, PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,10 +60,13 @@ export default async function DayPage({ params }: PageProps<"/trip/day/[day]">) 
       suggestion={<SuggestionIsland data={island} />}
       header={
         <div className="flex flex-col gap-3">
-          <Link href="/trip" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "-ml-2 w-fit")}>
-            <RiArrowLeftSLine data-icon="inline-start" />
-            여행 전체
-          </Link>
+          <div className="-ml-2 flex items-center gap-1">
+            <HomeLink />
+            <Link href="/trip" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+              <RiArrowLeftSLine data-icon="inline-start" />
+              여행 전체
+            </Link>
+          </div>
           <PageHeader
             eyebrow={
               <>
