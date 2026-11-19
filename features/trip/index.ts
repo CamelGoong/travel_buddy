@@ -7,6 +7,7 @@ export {
   dayNumberOn,
   MAX_TRIP_DAYS,
   placesOfDay,
+  tripTitle,
   type TripCourse,
   type TripDates,
 } from "./trip-days";
@@ -15,8 +16,10 @@ export { CURRENT_TRIP_COOKIE, getCurrentTrip, listTrips, type Trip, type CourseS
 export {
   countAiRunsSince,
   countTripsCreatedSince,
+  deleteTripRow,
   insertTrip,
   recordRegeneration,
+  renameTripRow,
   saveAiCourse,
   saveCourse,
   setTripBudget,

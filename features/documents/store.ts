@@ -259,3 +259,24 @@ export async function getOfflineManifest(tripId: number): Promise<OfflineEntry[]
     .map((file) => ({ id: file.id, fileName: file.fileName, contentType: file.contentType, slotName: file.slotName }));
   return [...own, ...others];
 }
+
+/** Storage paths of the signed-in person's own files in a trip (used before the trip is deleted). */
+export async function ownFilePaths(tripId: number): Promise<string[]> {
+  const supabase = await createClient();
+  const me = await getUserId();
+  if (!me) return [];
+  const { data, error } = await supabase
+    .from("document_files")
+    .select("storage_path")
+    .eq("trip_id", tripId)
+    .eq("user_id", me);
+  if (error) throw error;
+  return data.map((row) => row.storage_path);
+}
+
+/** Removes stored files from the private bucket; failures are ignored (rows are already gone). */
+export async function removeStoredFiles(paths: string[]): Promise<void> {
+  if (paths.length === 0) return;
+  const supabase = await createClient();
+  await supabase.storage.from(BUCKET).remove(paths);
+}

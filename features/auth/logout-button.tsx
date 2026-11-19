@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { clearOfflineFiles } from "@/lib/offline-store";
 
-export function LogoutButton() {
+export function LogoutButton({ className }: { className?: string }) {
   const router = useRouter();
 
   const logout = async () => {
@@ -18,7 +18,7 @@ export function LogoutButton() {
   };
 
   return (
-    <Button variant="ghost" size="sm" onClick={logout}>
+    <Button variant="outline" size="sm" className={className} onClick={logout}>
       로그아웃
     </Button>
   );

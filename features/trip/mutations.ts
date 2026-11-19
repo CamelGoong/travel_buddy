@@ -95,3 +95,18 @@ export async function countTripsCreatedSince(sinceIso: string): Promise<number> 
   if (error) throw error;
   return count ?? 0;
 }
+
+/** Sets or clears (null) the trip's name. Owner only (row access rules). */
+export async function renameTripRow(tripId: number, name: string | null): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("trips").update({ name }).eq("id", tripId);
+  if (error) throw error;
+}
+
+/** Deletes a trip and everything under it; false when the signed-in account is not its owner. */
+export async function deleteTripRow(tripId: number): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("trips").delete().eq("id", tripId).select("id");
+  if (error) throw error;
+  return data.length > 0;
+}

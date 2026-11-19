@@ -2,14 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RiArrowLeftSLine } from "@remixicon/react";
 
-import { AppShell, HomeLink, PageHeader } from "@/components/app-shell";
+import { AppShell, PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { formatKoreanDate } from "@/lib/tokyo-time";
-import { LogoutButton } from "@/features/auth";
 import { getChecklist } from "@/features/checklist";
 import { allowanceForDay } from "@/features/budget";
 import {
@@ -27,6 +26,7 @@ import { getDayExpenses, getSpentByDay } from "@/features/expenses/server";
 import { dayStage, RouteLine } from "@/features/route-line";
 import { dateOfDay, OSAKA_SPOTS, placesOfDay } from "@/features/trip";
 
+import { AppNav } from "../../../app-nav";
 import { summarizeBudget } from "../../budget";
 import { loadTripContext } from "../../context";
 import { SuggestionIsland } from "../../suggestion-island";
@@ -90,7 +90,6 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
       header={
         <div className="flex flex-col gap-3">
           <div className="-ml-2 flex items-center gap-1">
-            <HomeLink />
             <Link href="/trip" className={buttonVariants({ variant: "ghost", size: "sm" })}>
               <RiArrowLeftSLine data-icon="inline-start" />
               여행 전체
@@ -112,7 +111,7 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
                 {dayNumber}일차 {dayNumber === todayDay && <Badge>오늘</Badge>}
               </span>
             }
-            action={<LogoutButton />}
+            action={<AppNav />}
           />
         </div>
       }
