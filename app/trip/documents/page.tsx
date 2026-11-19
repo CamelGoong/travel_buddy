@@ -4,7 +4,8 @@ import { RiArrowLeftSLine } from "@remixicon/react";
 import { AppShell, HomeLink, PageHeader } from "@/components/app-shell";
 import { buttonVariants } from "@/components/ui/button";
 import { getUserId } from "@/lib/supabase/server";
-import { getVault } from "@/features/documents/store";
+import { getSharedFiles, getVault } from "@/features/documents/store";
+import { getMembers } from "@/features/members/server";
 import { RouteLine, tripStage } from "@/features/route-line";
 import { buildCourse } from "@/features/trip";
 
@@ -16,7 +17,14 @@ export default async function DocumentsPage() {
   const ctx = await loadTripContext("/trip/documents");
   const { trip, now, days } = ctx;
   const userId = (await getUserId())!;
-  const vault = await getVault(trip.id);
+  const [vault, sharedFiles, members] = await Promise.all([
+    getVault(trip.id),
+    getSharedFiles(trip.id),
+    getMembers(trip.id),
+  ]);
+  const canShare = members.length > 1;
+  const defaultKinds = new Set(vault.map((slot) => slot.kind));
+  const extraShared = sharedFiles.filter((f) => !defaultKinds.has(f.slotKind) || f.slotKind === "custom");
 
   const places = buildCourse(trip).flatMap((day) =>
     day.places.map((p) => ({ name: p.name, label: `${day.dayNumber}일차 ${p.name}` })),
@@ -53,10 +61,27 @@ export default async function DocumentsPage() {
             kind={slot.kind}
             name={slot.name}
             files={slot.files}
+            sharedFiles={slot.kind === "custom" ? [] : sharedFiles.filter((f) => f.slotKind === slot.kind)}
+            canShare={canShare}
             places={places}
           />
         ))}
       </div>
+      {sharedFiles.some((f) => f.slotKind === "custom") && (
+        <section className="flex flex-col gap-2 text-sm" data-testid="shared-custom">
+          <h2 className="font-heading font-semibold">동반자가 함께 보여 준 기타 서류</h2>
+          <ul className="flex flex-col gap-1.5">
+            {extraShared.map((f) => (
+              <li key={f.id} className="flex items-center gap-2">
+                <a href={`/trip/documents/file/${f.id}`} target="_blank" rel="noreferrer" className="truncate underline-offset-4 hover:underline">
+                  {f.slotName} · {f.fileName}
+                </a>
+                <span className="ml-auto shrink-0 text-xs text-muted-foreground">올린 사람: {f.ownerNickname}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <AddSlotForm />
     </AppShell>
   );

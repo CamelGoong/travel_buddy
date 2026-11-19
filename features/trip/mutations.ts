@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUserId } from "@/lib/supabase/server";
 
 import type { Place } from "./course";
 
@@ -44,9 +44,12 @@ export async function setTripBudget(tripId: number, budgetYen: number | null): P
 /** How many trips the signed-in user created at or after an instant (ISO string). */
 export async function countTripsCreatedSince(sinceIso: string): Promise<number> {
   const supabase = await createClient();
+  const me = await getUserId();
+  if (!me) return 0;
   const { count, error } = await supabase
     .from("trips")
     .select("id", { count: "exact", head: true })
+    .eq("user_id", me)
     .gte("created_at", sinceIso);
   if (error) throw error;
   return count ?? 0;

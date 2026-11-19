@@ -12,7 +12,15 @@ import { formatKoreanDate } from "@/lib/tokyo-time";
 import { LogoutButton } from "@/features/auth";
 import { getChecklist } from "@/features/checklist";
 import { allowanceForDay } from "@/features/budget";
-import { formatYen } from "@/features/expenses";
+import {
+  categoryLabel,
+  EXPENSE_CATEGORIES,
+  filterExpenses,
+  formatYen,
+  parseCategory,
+  type ExpenseCategory,
+} from "@/features/expenses";
+import { getMembers } from "@/features/members/server";
 import { getDayExpenses, getSpentByDay } from "@/features/expenses/server";
 import { dayStage, RouteLine } from "@/features/route-line";
 import { dateOfDay, placesOfDay } from "@/features/trip";
@@ -24,8 +32,12 @@ import { loadIslandData } from "../../suggestions";
 import { recordExpense } from "./actions";
 import { ExpenseForm } from "./expense-form";
 
-export default async function DayPage({ params }: PageProps<"/trip/day/[day]">) {
+export default async function DayPage({ params, searchParams }: PageProps<"/trip/day/[day]">) {
   const { day } = await params;
+  const query = await searchParams;
+  const personFilter = Number(Array.isArray(query.person) ? query.person[0] : query.person) || null;
+  const rawCategory = Array.isArray(query.cat) ? query.cat[0] : query.cat;
+  const categoryFilter: ExpenseCategory | null = rawCategory ? parseCategory(rawCategory) : null;
   const ctx = await loadTripContext(`/trip/day/${day}`);
   const { trip, now, days, todayDay } = ctx;
 
@@ -35,11 +47,22 @@ export default async function DayPage({ params }: PageProps<"/trip/day/[day]">) 
   const date = dateOfDay(trip, dayNumber);
   const places = placesOfDay(trip, dayNumber);
   const model = dayStage({ dayNumber, dayDate: date, today: now.date, nowTime: now.time, places });
-  const [expenses, checklist, spentByDay] = await Promise.all([
+  const [expenses, checklist, spentByDay, members] = await Promise.all([
     getDayExpenses(trip.id, dayNumber),
     getChecklist(trip.id),
     getSpentByDay(trip.id),
+    getMembers(trip.id),
   ]);
+  const me = members.find((m) => m.isMe);
+  const shown = filterExpenses(expenses, { memberId: personFilter, category: categoryFilter });
+  const filtering = personFilter !== null || categoryFilter !== null;
+  const filterHref = (person: number | null, cat: ExpenseCategory | null) => {
+    const params = new URLSearchParams();
+    if (person) params.set("person", String(person));
+    if (cat) params.set("cat", cat);
+    const qs = params.toString();
+    return `/trip/day/${dayNumber}${qs ? `?${qs}` : ""}`;
+  };
   const budget = summarizeBudget({
     budgetYen: trip.budgetYen,
     dayCount: days,
@@ -53,6 +76,7 @@ export default async function DayPage({ params }: PageProps<"/trip/day/[day]">) 
       : null;
   const island = await loadIslandData(ctx, checklist, dayNumber, budget);
   const total = expenses.reduce((sum, e) => sum + e.amountYen, 0);
+  const shownTotal = shown.reduce((sum, e) => sum + e.amountYen, 0);
 
   return (
     <AppShell
@@ -131,15 +155,51 @@ export default async function DayPage({ params }: PageProps<"/trip/day/[day]">) 
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <ExpenseForm idPrefix="day" action={recordExpense.bind(null, trip.id, dayNumber)} />
+          <ExpenseForm
+            idPrefix="day"
+            action={recordExpense.bind(null, trip.id, dayNumber)}
+            members={members.map((m) => ({ id: m.id, nickname: m.nickname }))}
+            myMemberId={me?.id}
+          />
           {expenses.length > 0 && (
             <>
               <Separator />
-              <ul className="flex flex-col gap-2" data-testid="expenses">
-                {expenses.map((e) => (
-                  <li key={e.id} className="flex justify-between gap-3">
-                    <span>{e.label}</span>
-                    <span className="tabular-nums">{formatYen(e.amountYen)}</span>
+              <div className="flex flex-col gap-2" data-testid="expense-filter">
+                <div className="flex flex-wrap gap-1.5">
+                  <FilterChip href={filterHref(null, categoryFilter)} active={personFilter === null}>전체</FilterChip>
+                  {members.map((m) => (
+                    <FilterChip key={m.id} href={filterHref(personFilter === m.id ? null : m.id, categoryFilter)} active={personFilter === m.id}>
+                      {m.nickname}
+                    </FilterChip>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <FilterChip href={filterHref(personFilter, null)} active={categoryFilter === null}>모든 종류</FilterChip>
+                  {EXPENSE_CATEGORIES.map((c) => (
+                    <FilterChip key={c.key} href={filterHref(personFilter, categoryFilter === c.key ? null : c.key)} active={categoryFilter === c.key}>
+                      {c.label}
+                    </FilterChip>
+                  ))}
+                </div>
+                {filtering && (
+                  <p className="text-sm text-muted-foreground" data-testid="filtered-total">
+                    걸러 본 합계 <span className="font-heading font-semibold text-foreground">{formatYen(shownTotal)}</span> · {shown.length}건
+                  </p>
+                )}
+              </div>
+              <ul className="flex flex-col gap-3" data-testid="expenses">
+                {shown.map((e) => (
+                  <li key={e.id} className="flex flex-col gap-1">
+                    <div className="flex justify-between gap-3">
+                      <span>{e.label}</span>
+                      <span className="tabular-nums">{formatYen(e.amountYen)}</span>
+                    </div>
+                    <p className="flex flex-wrap gap-1 text-xs text-muted-foreground">
+                      {e.people.map((p) => (
+                        <span key={p.memberId}>#{p.nickname}</span>
+                      ))}
+                      <span>#{categoryLabel(e.category)}</span>
+                    </p>
                   </li>
                 ))}
               </ul>
@@ -148,5 +208,22 @@ export default async function DayPage({ params }: PageProps<"/trip/day/[day]">) 
         </CardContent>
       </Card>
     </AppShell>
+  );
+}
+
+function FilterChip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      replace
+      scroll={false}
+      aria-pressed={active}
+      className={cn(
+        "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+        active ? "border-primary bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50",
+      )}
+    >
+      {children}
+    </Link>
   );
 }

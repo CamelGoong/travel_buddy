@@ -12,6 +12,7 @@ import {
   getSlot,
   insertCustomSlot,
   setFilePlace,
+  setFileShared,
 } from "@/features/documents/store";
 import { getCurrentTrip } from "@/features/trip";
 
@@ -65,6 +66,11 @@ export async function removeSlot(slotId: number) {
 
 export async function changeFilePlace(fileId: number, placeName: string | null) {
   await setFilePlace(fileId, placeName);
+  refresh();
+}
+
+export async function changeFileShared(fileId: number, shared: boolean) {
+  await setFileShared(fileId, shared);
   refresh();
 }
 

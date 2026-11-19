@@ -44,7 +44,7 @@ export async function recordSuggestion(
     .from("suggestion_records")
     .upsert(
       { trip_id: tripId, kind, context, for_date: forDate, local_at: localAt },
-      { onConflict: "trip_id,kind,for_date,context", ignoreDuplicates: true },
+      { onConflict: "trip_id,user_id,kind,for_date,context", ignoreDuplicates: true },
     );
   if (error) throw error;
 }

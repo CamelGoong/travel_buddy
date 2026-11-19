@@ -8,9 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 import { fileProblem, type SlotKind } from "@/features/documents";
 
-import { changeFilePlace, registerFile, removeFile, removeSlot } from "./actions";
+import { changeFilePlace, changeFileShared, registerFile, removeFile, removeSlot } from "./actions";
 
-type FileView = { id: number; fileName: string; placeName: string | null };
+type FileView = { id: number; fileName: string; placeName: string | null; shared: boolean };
+type SharedView = { id: number; fileName: string; ownerNickname: string };
 
 const SELECT_CLASS =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
@@ -23,6 +24,8 @@ export function SlotCard({
   kind,
   name,
   files,
+  sharedFiles = [],
+  canShare,
   places,
 }: {
   slotId: number;
@@ -31,6 +34,10 @@ export function SlotCard({
   kind: SlotKind;
   name: string;
   files: FileView[];
+  /** Files companions chose to show in this kind of slot */
+  sharedFiles?: SharedView[];
+  /** Whether other members exist to share with */
+  canShare: boolean;
   /** Course-draft places as "N일차 장소" options for tickets */
   places: { name: string; label: string }[];
 }) {
@@ -132,6 +139,37 @@ export function SlotCard({
                     ))}
                   </select>
                 )}
+                {kind !== "passport" && canShare && (
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={f.shared}
+                      onChange={(e) => {
+                        const next = e.target.checked;
+                        startTransition(() => changeFileShared(f.id, next));
+                      }}
+                    />
+                    동반자와 함께 보기
+                  </label>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {sharedFiles.length > 0 && (
+          <ul className="flex flex-col gap-1.5 border-t pt-3" data-testid="shared-files">
+            {sharedFiles.map((f) => (
+              <li key={f.id} className="flex items-center gap-2 text-sm">
+                <RiFileTextLine className="shrink-0 text-muted-foreground" />
+                <a
+                  href={`/trip/documents/file/${f.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="min-w-0 truncate underline-offset-4 hover:underline"
+                >
+                  {f.fileName}
+                </a>
+                <span className="ml-auto shrink-0 text-xs text-muted-foreground">올린 사람: {f.ownerNickname}</span>
               </li>
             ))}
           </ul>

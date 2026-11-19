@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { rememberTrip } from "@/app/trips/actions";
 
 import { parseBudget } from "@/features/budget";
+import { parseNickname } from "@/features/members";
+import { renameMyNickname } from "@/features/members/server";
 import { toTokyoNow } from "@/lib/tokyo-time";
 import { parsePreferences } from "@/features/ai-course";
 import { generateCourse } from "@/features/ai-course/server";
@@ -27,6 +29,8 @@ export type CreateTripState = {
   startDate: string;
   endDate: string;
   budget?: string;
+  nickname?: string;
+  nicknameError?: string | null;
 };
 
 /** AI generations allowed per user per Osaka day; trips past it get the default course. */
@@ -41,8 +45,19 @@ export async function createTrip(
   const endDate = String(formData.get("endDate") ?? "");
   const budget = String(formData.get("budget") ?? "").trim();
 
+  const nicknameRaw = String(formData.get("nickname") ?? "");
   const reason = validateTripDates(startDate, endDate);
-  if (reason) return { error: reason, startDate, endDate, budget };
+  if (reason) return { error: reason, startDate, endDate, budget, nickname: nicknameRaw };
+
+  // Blank keeps the default nickname (the e-mail's local part).
+  let nickname: string | null = null;
+  if (nicknameRaw.trim() !== "") {
+    const parsed = parseNickname(nicknameRaw);
+    if (!parsed.ok) {
+      return { error: null, nicknameError: parsed.error, startDate, endDate, budget, nickname: nicknameRaw };
+    }
+    nickname = parsed.nickname;
+  }
 
   let budgetYen: number | null = null;
   if (budget !== "") {
@@ -66,6 +81,7 @@ export async function createTrip(
     };
     const tripId = await insertTrip(trip);
     await createDefaultChecklist(tripId);
+    if (nickname) await renameMyNickname(tripId, nickname).catch(() => {});
     await rememberTrip(tripId);
     // Suggestions are a bonus; the trip must not fail because of them.
     await createChecklistSuggestions(tripId, generated.suggestions).catch(() => {});

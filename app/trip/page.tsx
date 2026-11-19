@@ -6,19 +6,20 @@ import { LinkArrow } from "@/components/link-pending";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FieldGroup } from "@/components/ui/field";
 import { formatKoreanDate } from "@/lib/tokyo-time";
 import { LogoutButton } from "@/features/auth";
 import { getChecklist, getPendingSuggestions } from "@/features/checklist";
 import { getVault } from "@/features/documents/store";
+import { getMembers } from "@/features/members/server";
 import { getSpentByDay } from "@/features/expenses/server";
 import { RouteLine, tripStage } from "@/features/route-line";
 import { buildCourse } from "@/features/trip";
 
-import { acceptSuggestion, dismissChecklistSuggestion, toggleChecklistItem } from "./actions";
+import { acceptSuggestion, dismissChecklistSuggestion } from "./actions";
 import { summarizeBudget } from "./budget";
 import { BudgetCard } from "./budget-card";
-import { CheckRow } from "./check-row";
+import { ChecklistEditor } from "./checklist-editor";
+import { CompanionsCard } from "./companions/companions-card";
 import { loadTripContext } from "./context";
 import { ChecklistSuggestions } from "./checklist-suggestions";
 import { SuggestionIsland } from "./suggestion-island";
@@ -28,11 +29,12 @@ export default async function TripPage() {
   const ctx = await loadTripContext();
   const { trip, now, days, todayDay } = ctx;
 
-  const [checklist, pending, spentByDay, vault] = await Promise.all([
+  const [checklist, pending, spentByDay, vault, members] = await Promise.all([
     getChecklist(trip.id),
     getPendingSuggestions(trip.id),
     getSpentByDay(trip.id),
     getVault(trip.id),
+    getMembers(trip.id),
   ]);
   const filledSlots = vault.filter((slot) => slot.files.length > 0).length;
   const budget = summarizeBudget({
@@ -86,19 +88,9 @@ export default async function TripPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <FieldGroup className="gap-3" data-testid="checklist">
-            {checklist.map((item) => (
-              <CheckRow
-                key={item.id}
-                id={`checklist-${item.key}`}
-                label={item.label}
-                defaultChecked={item.done}
-                onToggle={toggleChecklistItem.bind(null, item.id)}
-              />
-            ))}
-          </FieldGroup>
+          <ChecklistEditor items={checklist} isOwner={trip.isOwner} />
         </CardContent>
-        {pending.length > 0 && (
+        {trip.isOwner && pending.length > 0 && (
           <CardContent>
             <ChecklistSuggestions
               suggestions={pending}
@@ -127,7 +119,13 @@ export default async function TripPage() {
         </Card>
       </Link>
 
-      <BudgetCard summary={budget} />
+      <CompanionsCard
+        tripId={trip.id}
+        isOwner={trip.isOwner}
+        members={members.map((m) => ({ id: m.id, nickname: m.nickname, role: m.role, isMe: m.isMe }))}
+      />
+
+      <BudgetCard summary={budget} canEdit={trip.isOwner} />
 
       <section className="flex flex-col gap-3">
         <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">

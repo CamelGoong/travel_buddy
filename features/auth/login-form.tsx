@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { safeNextPath } from "@/lib/safe-next-path";
 import { createClient } from "@/lib/supabase/client";
 
-export function LoginForm() {
+export function LoginForm({ next }: { next?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -30,8 +30,7 @@ export function LoginForm() {
       setIsLoading(false);
       return;
     }
-    const next = new URLSearchParams(window.location.search).get("next");
-    router.push(safeNextPath(next, "/trip"));
+    router.push(safeNextPath(next ?? new URLSearchParams(window.location.search).get("next"), "/trip"));
     router.refresh();
   };
 
@@ -74,7 +73,7 @@ export function LoginForm() {
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               처음이에요?{" "}
-              <Link href="/auth/sign-up" className="font-medium text-foreground underline underline-offset-4">
+              <Link href={next ? `/auth/sign-up?next=${encodeURIComponent(next)}` : "/auth/sign-up"} className="font-medium text-foreground underline underline-offset-4">
                 가입하기
               </Link>
             </p>

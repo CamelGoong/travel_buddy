@@ -1,7 +1,7 @@
 import { getDevLocation, type DevLocation } from "@/lib/clock";
 import { buildPrepItems, getPrepChecks, type PrepItem } from "@/features/briefing";
 import type { ChecklistItem } from "@/features/checklist";
-import { getVault } from "@/features/documents/store";
+import { getSharedFiles, getVault } from "@/features/documents/store";
 import { EVENING_FROM, type Spot, type TimedPlace } from "@/features/suggestions";
 import { getSuggestionRecords } from "@/features/suggestions/server";
 import { OSAKA_SPOTS, placesOfDay, type Place } from "@/features/trip";
@@ -48,14 +48,22 @@ export async function loadIslandData(
   ]);
   const resolved = new Set(records.resolvedToday);
 
-  const vault = todayDay !== null ? await getVault(trip.id) : [];
+  const [vault, shared] = todayDay !== null
+    ? await Promise.all([getVault(trip.id), getSharedFiles(trip.id)])
+    : [[], []];
   const isFlightDay = todayDay === 1 || (todayDay !== null && todayDay === ctx.days);
   const toLinked = (f: { id: number; fileName: string }) => ({ id: f.id, fileName: f.fileName });
   const flightFiles = isFlightDay
-    ? (vault.find((slot) => slot.kind === "flight")?.files ?? []).map(toLinked)
+    ? [
+        ...(vault.find((slot) => slot.kind === "flight")?.files ?? []),
+        ...shared.filter((f) => f.slotKind === "flight"),
+      ].map(toLinked)
     : [];
   const todayPlaces = todayDay ? placesOfDay(trip, todayDay) : [];
-  const ticketFiles = vault.find((slot) => slot.kind === "ticket")?.files ?? [];
+  const ticketFiles = [
+    ...(vault.find((slot) => slot.kind === "ticket")?.files ?? []),
+    ...shared.filter((f) => f.slotKind === "ticket"),
+  ];
   const tickets = todayPlaces
     .map((place) => ({
       placeName: place.name,

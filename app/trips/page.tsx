@@ -46,6 +46,7 @@ export default async function TripsPage() {
                           오사카 {days - 1}박 {days}일
                           <Badge variant={status === "여행 중" ? "default" : "outline"}>{status}</Badge>
                           {current?.id === trip.id && <Badge variant="secondary">보는 중</Badge>}
+                          {!trip.isOwner && <Badge variant="outline">함께하는 여행</Badge>}
                         </CardTitle>
                         <CardDescription>
                           {formatKoreanDate(trip.startDate)} – {formatKoreanDate(trip.endDate)}

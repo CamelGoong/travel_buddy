@@ -11,8 +11,8 @@ import { formatYen } from "@/features/expenses";
 import { saveBudget, type BudgetFormState } from "./actions";
 import type { BudgetSummary } from "./budget";
 
-export function BudgetCard({ summary }: { summary: BudgetSummary | null }) {
-  const [editing, setEditing] = useState(summary === null);
+export function BudgetCard({ summary, canEdit = true }: { summary: BudgetSummary | null; canEdit?: boolean }) {
+  const [editing, setEditing] = useState(canEdit && summary === null);
   const [state, formAction, pending] = useActionState<BudgetFormState, FormData>(
     async (prev, formData) => {
       const next = await saveBudget(prev, formData);
@@ -29,7 +29,7 @@ export function BudgetCard({ summary }: { summary: BudgetSummary | null }) {
         <CardDescription>
           {summary ? `총 ${formatYen(summary.budgetYen)}` : "여행 전체에 쓸 돈을 정하면 하루 권장액을 알려 드려요."}
         </CardDescription>
-        {summary && !editing && (
+        {canEdit && summary && !editing && (
           <CardAction>
             <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
               바꾸기
@@ -48,7 +48,7 @@ export function BudgetCard({ summary }: { summary: BudgetSummary | null }) {
             <Stat label={todayLabel(summary)} value={todayValue(summary)} />
           </dl>
         )}
-        {editing && (
+        {canEdit && editing && (
           <form action={formAction} className="flex flex-col gap-3">
             <Field data-invalid={!!state.error || undefined}>
               <FieldLabel htmlFor="budget-amount">예산 (엔)</FieldLabel>
