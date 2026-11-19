@@ -5,21 +5,22 @@ rule; this file holds values and points at the contract that owns each element.
 
 ## Values
 
-Source: `app/globals.css` (shadcn preset `b3L1ZiPY0W`). Update this section when that source changes.
+Source: `app/globals.css` (pastel glass theme, see [visual-theme](docs/decisions/visual-theme.md)). Update this section when that source changes.
 
-| Token | Light | Dark |
-| --- | --- | --- |
-| `--background` | `oklch(1 0 0)` | `oklch(0.148 0.004 228.8)` |
-| `--foreground` | `oklch(0.148 0.004 228.8)` | `oklch(0.987 0.002 197.1)` |
-| `--primary` | `oklch(0.52 0.105 223.128)` | `oklch(0.45 0.085 224.283)` |
-| `--primary-foreground` | `oklch(0.984 0.019 200.873)` | `oklch(0.984 0.019 200.873)` |
-| `--muted` | `oklch(0.963 0.002 197.1)` | `oklch(0.275 0.011 216.9)` |
-| `--muted-foreground` | `oklch(0.56 0.021 213.5)` | `oklch(0.723 0.014 214.4)` |
-| `--border` | `oklch(0.925 0.005 214.3)` | `oklch(1 0 0 / 10%)` |
-| `--destructive` | `oklch(0.577 0.245 27.325)` | `oklch(0.704 0.191 22.216)` |
+| Token | Light |
+| --- | --- |
+| `--background` | `oklch(0.96 0.03 305)` under a pink to lilac to sky gradient with two blurred colour blobs |
+| `--foreground` | `oklch(0.27 0.06 295)` |
+| `--card` | `oklch(1 0 0 / 0.58)` with `backdrop-blur-xl` and a white border |
+| `--primary` | `oklch(0.5 0.22 285)`; buttons use the gradient `--primary-from` `#6d4fe8` to `--primary-to` `#2f6be0` |
+| `--primary-foreground` | `oklch(0.99 0.005 295)` |
+| `--muted` | `oklch(0.96 0.02 295 / 0.7)` |
+| `--muted-foreground` | `oklch(0.44 0.05 295)` |
+| `--border` | `oklch(0.75 0.06 295 / 0.35)` |
+| `--destructive` | `oklch(0.52 0.22 27)` |
 
-Text roles: body `--font-serif` (Noto Serif), headings `--font-heading` (JetBrains Mono).
-Radius and spacing: `--radius` `0.625rem`; Tailwind default spacing scale.
+No dark palette is in use. Text role: one Korean sans (`--font-korean`, Noto Sans KR) for body and headings, headings in weight 800.
+Radius and spacing: `--radius` `0.75rem`; cards use the largest radius; Tailwind default spacing scale.
 
 ## Components
 

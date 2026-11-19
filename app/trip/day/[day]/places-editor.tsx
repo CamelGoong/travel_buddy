@@ -5,7 +5,7 @@ import { RiArrowDownLine, RiArrowUpLine, RiDeleteBinLine } from "@remixicon/reac
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MAX_PLACE_NAME } from "@/features/trip";
+import { MAX_PLACE_NAME } from "@/features/trip/course-edit";
 
 import { editDay, type CourseEdit } from "../../course-actions";
 

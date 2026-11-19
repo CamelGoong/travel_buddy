@@ -5,7 +5,7 @@ import { useActionState, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { FieldError, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { MAX_LABEL } from "@/features/checklist";
+import { MAX_LABEL } from "@/features/checklist/labels";
 
 import { addChecklistItem, removeChecklistItem, toggleChecklistItem, type ItemFormState } from "./actions";
 import { CheckRow } from "./check-row";

@@ -51,12 +51,12 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <header className="flex items-start justify-between gap-3">
-      <div className="flex min-w-0 flex-col gap-1">
+    <header className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+      <div className="flex min-w-0 flex-1 basis-48 flex-col gap-1">
         {eyebrow && <p className="text-sm text-muted-foreground">{eyebrow}</p>}
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight">{title}</h1>
       </div>
-      {action}
+      {action && <div className="shrink-0">{action}</div>}
     </header>
   );
 }
