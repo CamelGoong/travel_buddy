@@ -7,12 +7,15 @@ import { addDays } from "@/lib/tokyo-time";
 import { setPrepCheck } from "@/features/briefing";
 import { parseBudget } from "@/features/budget";
 import {
+  addCustomChecklistItem,
   addSuggestionToChecklist,
+  deleteChecklistItem,
   dismissSuggestion,
   setChecklistItemDone,
 } from "@/features/checklist";
 import { parseExpense } from "@/features/expenses";
 import { insertExpense } from "@/features/expenses/server";
+import { getMyMember } from "@/features/members/server";
 import type { SuggestionKind } from "@/features/suggestions";
 import { recordSuggestion } from "@/features/suggestions/server";
 import { dayNumberOn, getCurrentTrip, setTripBudget } from "@/features/trip";
@@ -21,6 +24,31 @@ import type { ExpenseFormState } from "./day/[day]/actions";
 
 export async function toggleChecklistItem(itemId: number, done: boolean) {
   await setChecklistItemDone(itemId, done);
+}
+
+export type ItemFormState = { error: string | null; label: string; saved: number };
+
+/** The owner adds a checklist item of their own. */
+export async function addChecklistItem(prev: ItemFormState, formData: FormData): Promise<ItemFormState> {
+  const label = String(formData.get("label") ?? "");
+  const trip = await getCurrentTrip();
+  if (!trip || !trip.isOwner) return { error: "항목은 여행 주인만 더할 수 있어요.", label, saved: prev.saved };
+  try {
+    const error = await addCustomChecklistItem(trip.id, label);
+    if (error) return { error, label, saved: prev.saved };
+  } catch {
+    return { error: "더하지 못했어요. 잠시 뒤 다시 시도해 주세요.", label, saved: prev.saved };
+  }
+  refresh();
+  return { error: null, label: "", saved: prev.saved + 1 };
+}
+
+/** The owner deletes an added item; the five defaults are never deleted. */
+export async function removeChecklistItem(itemId: number) {
+  const trip = await getCurrentTrip();
+  if (!trip?.isOwner) return;
+  await deleteChecklistItem(itemId);
+  refresh();
 }
 
 /** "추가": the suggestion becomes an unchecked checklist item. */
@@ -48,11 +76,12 @@ export async function togglePrepItem(
 }
 
 /** The user acted on or put off a suggestion; it will not come back in the same situation. */
-export async function resolveSuggestion(kind: SuggestionKind, context: string) {
+export async function resolveSuggestion(kind: SuggestionKind, context: string, opened = false) {
   const trip = await getCurrentTrip();
   if (!trip) return;
   const now = await getTokyoNow();
-  await recordSuggestion(trip.id, kind, context, now.date, `${now.date}T${now.time}`);
+  // An opened recommendation ("!" suffix) is finished for good; a put-off one only for today.
+  await recordSuggestion(trip.id, kind, opened ? `${context}!` : context, now.date, `${now.date}T${now.time}`);
 }
 
 /** Records today's expense from the meal prompt and closes that prompt. */
@@ -73,7 +102,9 @@ export async function recordExpenseFromPrompt(
     return { error: "오늘은 여행 일차가 아니에요.", amount, label, saved: prev.saved };
   }
   try {
-    await insertExpense(trip.id, day, parsed.value);
+    const me = await getMyMember(trip.id);
+    if (!me) throw new Error("not a member");
+    await insertExpense(trip.id, day, parsed.value, "food", [me.id]);
     await recordSuggestion(trip.id, "expense", meal, now.date, `${now.date}T${now.time}`);
   } catch {
     return { error: "기록하지 못했어요. 잠시 뒤 다시 시도해 주세요.", amount, label, saved: prev.saved };

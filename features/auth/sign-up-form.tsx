@@ -12,8 +12,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
+import { safeNextPath } from "@/lib/safe-next-path";
 
-export function SignUpForm() {
+export function SignUpForm({ next }: { next?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +45,7 @@ export function SignUpForm() {
       setIsLoading(false);
       return;
     }
-    router.push("/trip");
+    router.push(safeNextPath(next, "/trip"));
     router.refresh();
   };
 
@@ -90,7 +91,7 @@ export function SignUpForm() {
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               이미 계정이 있어요?{" "}
-              <Link href="/auth/login" className="font-medium text-foreground underline underline-offset-4">
+              <Link href={next ? `/auth/login?next=${encodeURIComponent(next)}` : "/auth/login"} className="font-medium text-foreground underline underline-offset-4">
                 로그인
               </Link>
             </p>

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import {
+  DEV_FX_COOKIE,
   DEV_LOC_COOKIE,
   DEV_NOW_COOKIE,
   DEV_PERM_COOKIE,
@@ -12,7 +13,7 @@ import {
  * Development only. Pretend the Osaka local time is `now` and/or make weather
  * loading fail, so morning and evening briefings can be checked at any hour.
  *   /dev/sim?now=2026-11-19T20:30   /dev/sim?weather=fail   /dev/sim?reset=1
- *   /dev/sim?loc=34.6688,135.5025   /dev/sim?perm=prompt|denied|granted (loc= / perm= clears)
+ *   /dev/sim?fx=fail (exchange rate lookup fails)   /dev/sim?loc=34.6688,135.5025   /dev/sim?perm=prompt|denied|granted (loc= / perm= clears)
  */
 export function GET(request: NextRequest) {
   if (!devSimulationEnabled) return new NextResponse(null, { status: 404 });
@@ -26,6 +27,7 @@ export function GET(request: NextRequest) {
   if (params.has("reset")) {
     response.cookies.delete(DEV_NOW_COOKIE);
     response.cookies.delete(DEV_WEATHER_COOKIE);
+    response.cookies.delete(DEV_FX_COOKIE);
     response.cookies.delete(DEV_LOC_COOKIE);
     response.cookies.delete(DEV_PERM_COOKIE);
     return response;
@@ -39,6 +41,11 @@ export function GET(request: NextRequest) {
   if (weather !== null) {
     if (weather === "fail") response.cookies.set(DEV_WEATHER_COOKIE, "fail", { path: "/" });
     else response.cookies.delete(DEV_WEATHER_COOKIE);
+  }
+  const fx = params.get("fx");
+  if (fx !== null) {
+    if (fx === "fail") response.cookies.set(DEV_FX_COOKIE, "fail", { path: "/" });
+    else response.cookies.delete(DEV_FX_COOKIE);
   }
   for (const [param, cookie] of [
     ["loc", DEV_LOC_COOKIE],

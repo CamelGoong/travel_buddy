@@ -30,6 +30,7 @@ const base: PickInput = {
   budgetAheadOfPace: false,
   flightDocsToday: false,
   ticketPlaceNames: new Set(),
+  preTrip: null,
 };
 const resolved = (...keys: string[]) => new Set(["morning:", ...keys]);
 /** Meals already asked, so time-window tests see only the suggestion under test. */
@@ -203,5 +204,70 @@ describe("document suggestions (trip-documents AC10–AC12)", () => {
     expect(
       pickSuggestion({ ...all, resolvedToday: new Set(["morning:", "flight:", "evening:"]) })?.kind,
     ).toBe("ticket");
+  });
+});
+
+describe("places typed in without coordinates (trip-course-edit AC5)", () => {
+  it("opens a name search for directions and skips arrival detection", () => {
+    const url = new URL(mapsDirectionsUrl({ name: "이치란 라멘" }, "transit"));
+    expect(url.searchParams.get("destination")).toBe("이치란 라멘 오사카");
+    const typed = [
+      { name: "오사카성 천수각", time: "10:00", lat: 34.68731, lng: 135.52599 },
+      { name: "이치란 라멘", time: "12:30" },
+    ];
+    const s = pickSuggestion({
+      ...base,
+      todayPlaces: typed,
+      nowTime: "12:00",
+      permission: "granted",
+      location: { lat: 34.68731, lng: 135.52599 },
+      resolvedToday: new Set(["morning:", "expense:lunch", "expense:dinner"]),
+    });
+    expect(s).toMatchObject({ kind: "next_place", place: { name: "이치란 라멘" }, estimate: null });
+  });
+});
+
+describe("before-trip nudges (pre-trip-nudges AC5–AC8)", () => {
+  const pre = {
+    ...base,
+    todayIsTripDay: false,
+    tomorrowIsTripDay: false,
+    onTodayDayScreen: false,
+    todayPlaces: [],
+    resolvedToday: new Set<string>(),
+    preTrip: { passPending: true, ticketPlaces: ["유니버설 스튜디오 재팬", "오사카성 천수각"], fxReady: true },
+  };
+  const sequence = (resolvedKeys: string[]) => pickSuggestion({ ...pre, resolvedToday: new Set(resolvedKeys) });
+
+  it("goes pass, transport, tickets in course order, coupon, then fx", () => {
+    expect(sequence([])?.kind).toBe("buy_pass");
+    expect(sequence(["buy_pass:"])?.kind).toBe("buy_transport");
+    expect(sequence(["buy_pass:", "buy_transport:"])).toMatchObject({ kind: "buy_ticket", context: "유니버설 스튜디오 재팬" });
+    expect(sequence(["buy_pass:", "buy_transport:", "buy_ticket:유니버설 스튜디오 재팬"])).toMatchObject({
+      kind: "buy_ticket",
+      context: "오사카성 천수각",
+    });
+    const rest = ["buy_pass:", "buy_transport:", "buy_ticket:유니버설 스튜디오 재팬", "buy_ticket:오사카성 천수각"];
+    expect(sequence(rest)?.kind).toBe("buy_coupon");
+    expect(sequence([...rest, "buy_coupon:"])?.kind).toBe("fx");
+    expect(sequence([...rest, "buy_coupon:", "fx:"])).toBeNull();
+  });
+  it("skips the pass nudge once the checklist item is done and fx when the rate is missing", () => {
+    const only = pickSuggestion({ ...pre, preTrip: { passPending: false, ticketPlaces: [], fxReady: false } });
+    expect(only?.kind).toBe("buy_transport");
+    const none = pickSuggestion({
+      ...pre,
+      preTrip: { passPending: false, ticketPlaces: [], fxReady: false },
+      resolvedToday: new Set(["buy_transport:", "buy_coupon:"]),
+    });
+    expect(none).toBeNull();
+  });
+  it("never shows before-trip nudges during the trip or outside the window", () => {
+    expect(pickSuggestion({ ...pre, preTrip: null })).toBeNull();
+    expect(pickSuggestion({ ...base, resolvedToday: new Set(["morning:", "expense:lunch", "expense:dinner"]), preTrip: null })).toBeNull();
+  });
+  it("lets the evening briefing come first the night before", () => {
+    const eve = { ...pre, tomorrowIsTripDay: true, nowTime: "20:30" };
+    expect(pickSuggestion(eve)?.kind).toBe("evening");
   });
 });

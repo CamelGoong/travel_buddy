@@ -7,6 +7,8 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { Input } from "@/components/ui/input";
 
 import { createTrip, type CreateTripState } from "./actions";
+import { MAX_NICKNAME } from "@/features/members";
+
 import { CompanionChips, InterestChips } from "./choice-chips";
 
 export function CreateTripForm({ defaultStart }: { defaultStart: string }) {
@@ -64,6 +66,20 @@ export function CreateTripForm({ defaultStart }: { defaultStart: string }) {
           />
           <FieldDescription>여행 전체에 쓸 돈이에요. 나중에 정해도 돼요.</FieldDescription>
           <FieldError>{state.budgetError}</FieldError>
+        </Field>
+        <Field data-invalid={!!state.nicknameError || undefined}>
+          <FieldLabel htmlFor="nickname">내 닉네임 (선택)</FieldLabel>
+          <Input
+            id="nickname"
+            name="nickname"
+            maxLength={MAX_NICKNAME}
+            placeholder="비우면 이메일 앞부분"
+            defaultValue={state.nickname ?? ""}
+            key={`n-${state.nickname ?? ""}`}
+            aria-invalid={!!state.nicknameError || undefined}
+          />
+          <FieldDescription>함께 가는 사람들에게 보이는 이름이에요. 나중에 바꿀 수 있어요.</FieldDescription>
+          <FieldError>{state.nicknameError}</FieldError>
         </Field>
         <Field>
           <FieldLabel>누구와 가나요? (선택)</FieldLabel>

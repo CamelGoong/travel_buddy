@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUserId } from "@/lib/supabase/server";
 
 import type { Place } from "./course";
 
@@ -15,13 +15,18 @@ export type Trip = {
   /** Stored AI course, one entry per day; null for trips made before AI courses */
   course: Place[][] | null;
   courseSource: CourseSource;
+  /** Chosen when the trip was made; used again when the owner asks the AI to redo the course */
+  companion: string | null;
+  interests: string[];
+  /** True when the signed-in account created the trip; companions only see it */
+  isOwner: boolean;
 };
 
 type CourseJson = { places: Place[] }[];
 
 export const CURRENT_TRIP_COOKIE = "current_trip";
 
-const TRIP_COLUMNS = "id, start_date, end_date, budget_yen, course, course_source";
+const TRIP_COLUMNS = "id, user_id, start_date, end_date, budget_yen, course, course_source, companion, interests";
 
 /**
  * The trip the user is looking at: the one picked on the trip list (cookie),
@@ -29,6 +34,7 @@ const TRIP_COLUMNS = "id, start_date, end_date, budget_yen, course, course_sourc
  */
 export async function getCurrentTrip(): Promise<Trip | null> {
   const supabase = await createClient();
+  const me = await getUserId();
   const pickedId = Number((await cookies()).get(CURRENT_TRIP_COOKIE)?.value);
 
   if (Number.isInteger(pickedId) && pickedId > 0) {
@@ -38,7 +44,7 @@ export async function getCurrentTrip(): Promise<Trip | null> {
       .eq("id", pickedId)
       .maybeSingle();
     if (error) throw error;
-    if (data) return toTrip(data);
+    if (data) return toTrip(data, me);
   }
 
   const { data, error } = await supabase
@@ -48,37 +54,45 @@ export async function getCurrentTrip(): Promise<Trip | null> {
     .limit(1)
     .maybeSingle();
   if (error) throw error;
-  return data ? toTrip(data) : null;
+  return data ? toTrip(data, me) : null;
 }
 
 /** All of the signed-in user's trips, newest first. */
 export async function listTrips(): Promise<Trip[]> {
   const supabase = await createClient();
+  const me = await getUserId();
   const { data, error } = await supabase
     .from("trips")
     .select(TRIP_COLUMNS)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return data.map(toTrip);
+  return data.map((row) => toTrip(row, me));
 }
 
 type TripRow = {
   id: number;
+  user_id: string;
   start_date: string;
   end_date: string;
   budget_yen: number | null;
   course: unknown;
   course_source: string;
+  companion: string | null;
+  interests: string[] | null;
 };
 
-function toTrip(data: TripRow): Trip {
+function toTrip(data: TripRow, me: string | null): Trip {
   const stored = data.course as CourseJson | null;
   return {
     id: data.id,
     startDate: data.start_date,
     endDate: data.end_date,
     budgetYen: data.budget_yen,
-    course: data.course_source === "ai" && stored ? stored.map((day) => day.places) : null,
+    // An edited default course keeps source "default" but stores its places.
+    course: stored ? stored.map((day) => day.places) : null,
     courseSource: data.course_source === "ai" ? "ai" : "default",
+    companion: data.companion,
+    interests: data.interests ?? [],
+    isOwner: data.user_id === me,
   };
 }

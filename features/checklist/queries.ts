@@ -1,12 +1,16 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUserId } from "@/lib/supabase/server";
 
 import { DEFAULT_CHECKLIST } from "./defaults";
+import { validateNewChecklistLabel } from "./labels";
 
 export type ChecklistItem = {
   id: number;
   key: string;
   label: string;
+  /** Whether the signed-in person marked it done */
   done: boolean;
+  /** Items the owner added or accepted from a suggestion can be deleted; the five defaults cannot */
+  removable: boolean;
 };
 
 export async function createDefaultChecklist(tripId: number): Promise<void> {
@@ -22,29 +26,39 @@ export async function createDefaultChecklist(tripId: number): Promise<void> {
   if (error) throw error;
 }
 
+/** The trip's checklist with the signed-in person's own done marks. */
 export async function getChecklist(tripId: number): Promise<ChecklistItem[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("checklist_items")
-    .select("id, item_key, label, done")
+    .select("id, item_key, label, checklist_done(user_id)")
     .eq("trip_id", tripId)
     .order("position");
   if (error) throw error;
+  const me = await getUserId();
   return data.map((row) => ({
     id: row.id,
     key: row.item_key,
     label: row.label,
-    done: row.done,
+    done: row.checklist_done.some((mark) => mark.user_id === me),
+    removable: !DEFAULT_CHECKLIST.some((item) => item.key === row.item_key),
   }));
 }
 
+/** Marks an item done or not done for the signed-in person only. */
 export async function setChecklistItemDone(itemId: number, done: boolean): Promise<void> {
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("checklist_items")
-    .update({ done })
-    .eq("id", itemId);
-  if (error) throw error;
+  const me = await getUserId();
+  if (!me) return;
+  if (done) {
+    const { error } = await supabase
+      .from("checklist_done")
+      .upsert({ item_id: itemId, user_id: me }, { onConflict: "item_id,user_id", ignoreDuplicates: true });
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from("checklist_done").delete().eq("item_id", itemId).eq("user_id", me);
+    if (error) throw error;
+  }
 }
 
 export type ChecklistSuggestion = { id: number; label: string };
@@ -112,14 +126,52 @@ export async function dismissSuggestion(suggestionId: number): Promise<void> {
   if (error) throw error;
 }
 
-/** Marks the checklist item with this key done; a no-op when it is missing or already done. */
+/** Marks the checklist item with this key done for the signed-in person; a no-op when missing or already done. */
 export async function completeChecklistItemByKey(tripId: number, itemKey: string): Promise<void> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("checklist_items")
+    .select("id")
+    .eq("trip_id", tripId)
+    .eq("item_key", itemKey)
+    .maybeSingle();
+  if (error) throw error;
+  if (data) await setChecklistItemDone(data.id, true);
+}
+
+const MAX_CUSTOM_ITEMS = 20;
+
+/** Adds an item the owner typed as the last, unchecked item. Returns an error message or null. */
+export async function addCustomChecklistItem(tripId: number, label: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("checklist_items")
+    .select("item_key, label, position")
+    .eq("trip_id", tripId)
+    .order("position", { ascending: false });
+  if (error) throw error;
+  const check = validateNewChecklistLabel(label, data.map((row) => row.label));
+  if (!check.ok) return check.error;
+  if (data.filter((row) => row.item_key.startsWith("custom-")).length >= MAX_CUSTOM_ITEMS) {
+    return `직접 더한 항목은 ${MAX_CUSTOM_ITEMS}개까지예요.`;
+  }
+  const { error: insertError } = await supabase.from("checklist_items").insert({
+    trip_id: tripId,
+    item_key: `custom-${crypto.randomUUID()}`,
+    label: check.label,
+    position: (data[0]?.position ?? -1) + 1,
+  });
+  if (insertError) throw insertError;
+  return null;
+}
+
+/** Deletes an item the owner added or accepted from a suggestion; the five defaults are never deleted. */
+export async function deleteChecklistItem(itemId: number): Promise<void> {
   const supabase = await createClient();
   const { error } = await supabase
     .from("checklist_items")
-    .update({ done: true })
-    .eq("trip_id", tripId)
-    .eq("item_key", itemKey)
-    .eq("done", false);
+    .delete()
+    .eq("id", itemId)
+    .or("item_key.like.custom-%,item_key.like.suggested-%");
   if (error) throw error;
 }

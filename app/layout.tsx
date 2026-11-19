@@ -1,22 +1,14 @@
+import { RegisterOffline } from "@/components/register-offline";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter, Noto_Serif, JetBrains_Mono } from "next/font/google";
+import { Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const jetbrainsMonoHeading = JetBrains_Mono({subsets:['latin'],variable:'--font-heading'});
-
-const notoSerif = Noto_Serif({subsets:['latin'],variable:'--font-serif'});
-
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const notoSansKr = Noto_Sans_KR({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["400", "500", "700", "800"],
+  display: "swap",
+  variable: "--font-korean",
 });
 
 export const metadata: Metadata = {
@@ -28,9 +20,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ko"
-      className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, inter.variable, "font-serif", notoSerif.variable, jetbrainsMonoHeading.variable)}
+      className={cn("h-full", "antialiased", "font-serif", notoSansKr.variable)}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <RegisterOffline />
+      </body>
     </html>
   );
 }

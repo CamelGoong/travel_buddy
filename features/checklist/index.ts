@@ -1,6 +1,9 @@
 export { DEFAULT_CHECKLIST } from "./defaults";
+export { MAX_LABEL, validateNewChecklistLabel } from "./labels";
 export {
+  addCustomChecklistItem,
   addSuggestionToChecklist,
+  deleteChecklistItem,
   createChecklistSuggestions,
   completeChecklistItemByKey,
   createDefaultChecklist,

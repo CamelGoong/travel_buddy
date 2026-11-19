@@ -10,12 +10,18 @@ export type SuggestionKind =
   | "budget_pace"
   | "flight"
   | "ticket"
+  | "fx"
+  | "buy_pass"
+  | "buy_transport"
+  | "buy_ticket"
+  | "buy_coupon"
   | "location"
   | "nearby";
 
 export type LocationPermission = "granted" | "denied" | "prompt" | "unknown";
 
-export type TimedPlace = LatLng & { name: string; time: string };
+export type TimedPlace = Partial<LatLng> & { name: string; time: string };
+const hasCoords = (p: Partial<LatLng>): p is LatLng => p.lat != null && p.lng != null;
 export type Spot = LatLng & { key: string; name: string };
 
 export type NearbySpot = Spot & { meters: number; walkMinutes: number };
@@ -34,6 +40,11 @@ export type Suggestion =
   | { kind: "budget_pace"; context: "" }
   | { kind: "flight"; context: "" }
   | { kind: "ticket"; context: string; place: TimedPlace }
+  | { kind: "fx"; context: "" }
+  | { kind: "buy_pass"; context: "" }
+  | { kind: "buy_transport"; context: "" }
+  | { kind: "buy_ticket"; context: string }
+  | { kind: "buy_coupon"; context: "" }
   | { kind: "location"; context: "" }
   | { kind: "nearby"; context: string; spots: NearbySpot[] };
 
@@ -69,6 +80,13 @@ export type PickInput = {
   flightDocsToday: boolean;
   /** Names of today's places that have an entry ticket linked */
   ticketPlaceNames: ReadonlySet<string>;
+  /** Before-trip nudges, set only on the trip screen within 14 days before departure */
+  preTrip: {
+    passPending: boolean;
+    /** Ticketed course places with no entry ticket linked, in course order */
+    ticketPlaces: string[];
+    fxReady: boolean;
+  } | null;
 };
 
 const key = (kind: SuggestionKind, context = "") => `${kind}:${context}`;
@@ -90,7 +108,7 @@ function nextPlace(input: PickInput): Suggestion | null {
 
   if (input.location) {
     places.forEach((p, i) => {
-      if (i + 1 < places.length && distanceMeters(input.location!, p) <= ARRIVAL_RADIUS_M) {
+      if (i + 1 < places.length && hasCoords(p) && distanceMeters(input.location!, p) <= ARRIVAL_RADIUS_M) {
         candidates.push({ index: i + 1, trigger: "arrival" });
       }
     });
@@ -108,7 +126,7 @@ function nextPlace(input: PickInput): Suggestion | null {
       context: String(c.index),
       place,
       trigger: c.trigger,
-      estimate: input.location ? estimateTravel(distanceMeters(input.location, place)) : null,
+      estimate: input.location && hasCoords(place) ? estimateTravel(distanceMeters(input.location, place)) : null,
     };
   }
   return null;
@@ -119,7 +137,7 @@ function ticket(input: PickInput): Suggestion | null {
   for (const place of input.todayPlaces) {
     if (!input.ticketPlaceNames.has(place.name)) continue;
     if (input.resolvedToday.has(key("ticket", place.name))) continue;
-    if (distanceMeters(input.location, place) <= ARRIVAL_RADIUS_M) {
+    if (hasCoords(place) && distanceMeters(input.location, place) <= ARRIVAL_RADIUS_M) {
       return { kind: "ticket", context: place.name, place };
     }
   }
@@ -165,6 +183,16 @@ export function pickSuggestion(input: PickInput): Suggestion | null {
   if (input.todayIsTripDay) {
     const entry = ticket(input);
     if (entry) return entry;
+  }
+
+  if (input.preTrip) {
+    const pre = input.preTrip;
+    if (pre.passPending && !done("buy_pass")) return { kind: "buy_pass", context: "" };
+    if (!done("buy_transport")) return { kind: "buy_transport", context: "" };
+    const place = pre.ticketPlaces.find((name) => !done("buy_ticket", name));
+    if (place) return { kind: "buy_ticket", context: place };
+    if (!done("buy_coupon")) return { kind: "buy_coupon", context: "" };
+    if (pre.fxReady && !done("fx")) return { kind: "fx", context: "" };
   }
 
   if (input.onTodayDayScreen) {

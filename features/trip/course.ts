@@ -5,8 +5,9 @@ export type Place = {
   name: string;
   /** Scheduled time, HH:MM in Osaka local time */
   time: string;
-  lat: number;
-  lng: number;
+  /** Missing for a place the owner typed in; such places have no arrival detection */
+  lat?: number;
+  lng?: number;
 };
 
 export type CourseDay = {

@@ -6,19 +6,24 @@ import { LinkArrow } from "@/components/link-pending";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FieldGroup } from "@/components/ui/field";
 import { formatKoreanDate } from "@/lib/tokyo-time";
 import { LogoutButton } from "@/features/auth";
 import { getChecklist, getPendingSuggestions } from "@/features/checklist";
 import { getVault } from "@/features/documents/store";
+import { getMembers } from "@/features/members/server";
+import { getOfflineManifest } from "@/features/documents/store";
+import { OfflineSync } from "@/components/offline-sync";
+import { getFxSnapshot } from "@/features/fx/server";
 import { getSpentByDay } from "@/features/expenses/server";
 import { RouteLine, tripStage } from "@/features/route-line";
 import { buildCourse } from "@/features/trip";
 
-import { acceptSuggestion, dismissChecklistSuggestion, toggleChecklistItem } from "./actions";
+import { acceptSuggestion, dismissChecklistSuggestion } from "./actions";
 import { summarizeBudget } from "./budget";
 import { BudgetCard } from "./budget-card";
-import { CheckRow } from "./check-row";
+import { RegenerateButton } from "./regenerate-button";
+import { ChecklistEditor } from "./checklist-editor";
+import { CompanionsCard } from "./companions/companions-card";
 import { loadTripContext } from "./context";
 import { ChecklistSuggestions } from "./checklist-suggestions";
 import { SuggestionIsland } from "./suggestion-island";
@@ -28,11 +33,14 @@ export default async function TripPage() {
   const ctx = await loadTripContext();
   const { trip, now, days, todayDay } = ctx;
 
-  const [checklist, pending, spentByDay, vault] = await Promise.all([
+  const [checklist, pending, spentByDay, vault, members, fx, manifest] = await Promise.all([
     getChecklist(trip.id),
     getPendingSuggestions(trip.id),
     getSpentByDay(trip.id),
     getVault(trip.id),
+    getMembers(trip.id),
+    getFxSnapshot(),
+    getOfflineManifest(trip.id),
   ]);
   const filledSlots = vault.filter((slot) => slot.files.length > 0).length;
   const budget = summarizeBudget({
@@ -86,19 +94,9 @@ export default async function TripPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <FieldGroup className="gap-3" data-testid="checklist">
-            {checklist.map((item) => (
-              <CheckRow
-                key={item.id}
-                id={`checklist-${item.key}`}
-                label={item.label}
-                defaultChecked={item.done}
-                onToggle={toggleChecklistItem.bind(null, item.id)}
-              />
-            ))}
-          </FieldGroup>
+          <ChecklistEditor items={checklist} isOwner={trip.isOwner} />
         </CardContent>
-        {pending.length > 0 && (
+        {trip.isOwner && pending.length > 0 && (
           <CardContent>
             <ChecklistSuggestions
               suggestions={pending}
@@ -127,13 +125,25 @@ export default async function TripPage() {
         </Card>
       </Link>
 
-      <BudgetCard summary={budget} />
+      <OfflineSync manifest={manifest} />
+
+      <CompanionsCard
+        tripId={trip.id}
+        isOwner={trip.isOwner}
+        members={members.map((m) => ({ id: m.id, nickname: m.nickname, role: m.role, isMe: m.isMe }))}
+      />
+
+      <BudgetCard summary={budget} canEdit={trip.isOwner} rate={fx?.rate ?? null} />
 
       <section className="flex flex-col gap-3">
-        <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
-          코스 초안
-          {trip.courseSource === "default" && <Badge variant="outline">기본 코스</Badge>}
-        </h2>
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
+            코스 초안
+            {trip.courseSource === "default" && <Badge variant="outline">기본 코스</Badge>}
+          </h2>
+          {trip.isOwner && <RegenerateButton />}
+        </div>
+        {trip.isOwner && <p className="-mt-1 text-xs text-muted-foreground">일차를 열어 편집 버튼을 누르면 순서와 장소를 바꿀 수 있어요.</p>}
         <ol className="flex flex-col gap-3" data-testid="course">
           {course.map((day) => (
             <li key={day.dayNumber}>

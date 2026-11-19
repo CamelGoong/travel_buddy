@@ -11,7 +11,7 @@ export function RouteLine({ model }: { model: RouteLineModel }) {
 
   return (
     <div
-      className="border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75"
+      className="border-b border-white/70 bg-white/45 backdrop-blur-xl backdrop-saturate-150 supports-not-[backdrop-filter]:bg-white"
       data-testid="route-line"
     >
       <div className="mx-auto flex w-full max-w-md flex-col gap-1.5 px-4 pt-2 pb-2.5">

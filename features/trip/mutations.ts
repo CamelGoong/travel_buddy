@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUserId } from "@/lib/supabase/server";
 
 import type { Place } from "./course";
 
@@ -41,12 +41,56 @@ export async function setTripBudget(tripId: number, budgetYen: number | null): P
   if (error) throw error;
 }
 
+/** Replaces the whole stored course with edited days (the course source label is unchanged). */
+export async function saveCourse(tripId: number, days: Place[][]): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("trips")
+    .update({ course: days.map((places) => ({ places })) })
+    .eq("id", tripId);
+  if (error) throw error;
+}
+
+/** Stores a freshly generated course and marks the trip as AI-made. */
+export async function saveAiCourse(tripId: number, days: Place[][]): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("trips")
+    .update({ course: days.map((places) => ({ places })), course_source: "ai", fallback_reason: null })
+    .eq("id", tripId);
+  if (error) throw error;
+}
+
+/** Notes that the signed-in owner asked the AI to redo a course (counts toward the daily limit). */
+export async function recordRegeneration(tripId: number): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("course_regenerations").insert({ trip_id: tripId });
+  if (error) throw error;
+}
+
+/** AI runs by the signed-in user since an instant: trips created plus courses redone. */
+export async function countAiRunsSince(sinceIso: string): Promise<number> {
+  const supabase = await createClient();
+  const me = await getUserId();
+  if (!me) return 0;
+  const { count, error } = await supabase
+    .from("course_regenerations")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", me)
+    .gte("created_at", sinceIso);
+  if (error) throw error;
+  return (count ?? 0) + (await countTripsCreatedSince(sinceIso));
+}
+
 /** How many trips the signed-in user created at or after an instant (ISO string). */
 export async function countTripsCreatedSince(sinceIso: string): Promise<number> {
   const supabase = await createClient();
+  const me = await getUserId();
+  if (!me) return 0;
   const { count, error } = await supabase
     .from("trips")
     .select("id", { count: "exact", head: true })
+    .eq("user_id", me)
     .gte("created_at", sinceIso);
   if (error) throw error;
   return count ?? 0;

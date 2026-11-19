@@ -25,7 +25,7 @@ export async function setPrepCheck(
     .from("prep_checks")
     .upsert(
       { trip_id: tripId, for_date: forDate, item_key: itemKey, done },
-      { onConflict: "trip_id,for_date,item_key" },
+      { onConflict: "trip_id,user_id,for_date,item_key" },
     );
   if (error) throw error;
 }
