@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getTokyoNow } from "@/lib/clock";
 import { getUserId } from "@/lib/supabase/server";
 import { LogoutButton } from "@/features/auth";
+import { OnboardingGate } from "@/features/onboarding";
 
 import { CreateTripForm } from "./create-trip-form";
 
@@ -24,6 +25,7 @@ export default async function NewTripPage() {
           <CreateTripForm defaultStart={now.date} />
         </CardContent>
       </Card>
+      <OnboardingGate />
     </AppShell>
   );
 }

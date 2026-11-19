@@ -8,6 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatKoreanDate } from "@/lib/tokyo-time";
 import { LogoutButton } from "@/features/auth";
+import { OnboardingGate } from "@/features/onboarding";
 import { getChecklist, getPendingSuggestions } from "@/features/checklist";
 import { getVault } from "@/features/documents/store";
 import { getMembers } from "@/features/members/server";
@@ -126,6 +127,7 @@ export default async function TripPage() {
       </Link>
 
       <OfflineSync manifest={manifest} />
+      <OnboardingGate />
 
       <CompanionsCard
         tripId={trip.id}

@@ -10,6 +10,7 @@ import { getTokyoNow } from "@/lib/clock";
 import { getUserId } from "@/lib/supabase/server";
 import { formatKoreanDate } from "@/lib/tokyo-time";
 import { LogoutButton } from "@/features/auth";
+import { OnboardingGate, ReplayTour } from "@/features/onboarding";
 import { dayCount, getCurrentTrip, listTrips } from "@/features/trip";
 
 import { OpenTripLink } from "./open-trip-link";
@@ -67,6 +68,10 @@ export default async function TripsPage() {
         <RiAddLine data-icon="inline-start" />
         새 여행 만들기
       </Link>
+      <div className="flex justify-center">
+        <ReplayTour />
+      </div>
+      <OnboardingGate />
     </AppShell>
   );
 }
