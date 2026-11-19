@@ -3,7 +3,7 @@ import { buildPrepItems, getPrepChecks, type PrepItem } from "@/features/briefin
 import type { ChecklistItem } from "@/features/checklist";
 import { EVENING_FROM, type Spot, type TimedPlace } from "@/features/suggestions";
 import { getSuggestionRecords } from "@/features/suggestions/server";
-import { OSAKA_SPOTS, placesForDay, type Place } from "@/features/trip";
+import { OSAKA_SPOTS, placesOfDay, type Place } from "@/features/trip";
 import { outfitLine, type DailyForecast } from "@/features/weather";
 
 import type { BudgetSummary } from "./budget";
@@ -57,7 +57,7 @@ export async function loadIslandData(
     todayDay,
     tomorrowDay,
     onTodayDayScreen: dayScreen !== null && dayScreen === todayDay,
-    todayPlaces: todayDay ? placesForDay(todayDay) : [],
+    todayPlaces: todayDay ? placesOfDay(trip, todayDay) : [],
     spots: OSAKA_SPOTS,
     resolvedToday: records.resolvedToday,
     lastNearbyAt: records.lastNearbyAt,
@@ -66,7 +66,7 @@ export async function loadIslandData(
     morning:
       morningDue && todayDay
         ? {
-            places: placesForDay(todayDay),
+            places: placesOfDay(trip, todayDay),
             forecast: morningForecast,
             outfit: morningForecast ? outfitLine(morningForecast) : null,
           }
@@ -74,7 +74,7 @@ export async function loadIslandData(
     evening:
       eveningDue && tomorrowDay
         ? {
-            places: placesForDay(tomorrowDay),
+            places: placesOfDay(trip, tomorrowDay),
             forecast: eveningForecast,
             prepItems: buildPrepItems({
               tomorrowIsFirstDay: tomorrowDay === 1,

@@ -15,7 +15,7 @@ import { allowanceForDay } from "@/features/budget";
 import { formatYen } from "@/features/expenses";
 import { getDayExpenses, getSpentByDay } from "@/features/expenses/server";
 import { dayStage, RouteLine } from "@/features/route-line";
-import { dateOfDay, placesForDay } from "@/features/trip";
+import { dateOfDay, placesOfDay } from "@/features/trip";
 
 import { summarizeBudget } from "../../budget";
 import { loadTripContext } from "../../context";
@@ -33,7 +33,7 @@ export default async function DayPage({ params }: PageProps<"/trip/day/[day]">) 
   if (!Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > days) notFound();
 
   const date = dateOfDay(trip, dayNumber);
-  const places = placesForDay(dayNumber);
+  const places = placesOfDay(trip, dayNumber);
   const model = dayStage({ dayNumber, dayDate: date, today: now.date, nowTime: now.time, places });
   const [expenses, checklist, spentByDay] = await Promise.all([
     getDayExpenses(trip.id, dayNumber),
