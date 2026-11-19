@@ -26,6 +26,7 @@ export default async function DocumentsPage() {
   const defaultKinds = new Set(vault.map((slot) => slot.kind));
   const extraShared = sharedFiles.filter((f) => !defaultKinds.has(f.slotKind) || f.slotKind === "custom");
 
+  const courseNames = new Set(buildCourse(trip).flatMap((day) => day.places.map((p) => p.name)));
   const places = buildCourse(trip).flatMap((day) =>
     day.places.map((p) => ({ name: p.name, label: `${day.dayNumber}일차 ${p.name}` })),
   );
@@ -60,7 +61,7 @@ export default async function DocumentsPage() {
             userId={userId}
             kind={slot.kind}
             name={slot.name}
-            files={slot.files}
+            files={slot.files.map((f) => ({ ...f, placeName: f.placeName && courseNames.has(f.placeName) ? f.placeName : null }))}
             sharedFiles={slot.kind === "custom" ? [] : sharedFiles.filter((f) => f.slotKind === slot.kind)}
             canShare={canShare}
             places={places}

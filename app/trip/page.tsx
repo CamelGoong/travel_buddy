@@ -18,6 +18,7 @@ import { buildCourse } from "@/features/trip";
 import { acceptSuggestion, dismissChecklistSuggestion } from "./actions";
 import { summarizeBudget } from "./budget";
 import { BudgetCard } from "./budget-card";
+import { RegenerateButton } from "./regenerate-button";
 import { ChecklistEditor } from "./checklist-editor";
 import { CompanionsCard } from "./companions/companions-card";
 import { loadTripContext } from "./context";
@@ -128,10 +129,14 @@ export default async function TripPage() {
       <BudgetCard summary={budget} canEdit={trip.isOwner} />
 
       <section className="flex flex-col gap-3">
-        <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
-          코스 초안
-          {trip.courseSource === "default" && <Badge variant="outline">기본 코스</Badge>}
-        </h2>
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
+            코스 초안
+            {trip.courseSource === "default" && <Badge variant="outline">기본 코스</Badge>}
+          </h2>
+          {trip.isOwner && <RegenerateButton />}
+        </div>
+        {trip.isOwner && <p className="-mt-1 text-xs text-muted-foreground">일차를 열어 편집 버튼을 누르면 순서와 장소를 바꿀 수 있어요.</p>}
         <ol className="flex flex-col gap-3" data-testid="course">
           {course.map((day) => (
             <li key={day.dayNumber}>

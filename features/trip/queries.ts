@@ -15,6 +15,9 @@ export type Trip = {
   /** Stored AI course, one entry per day; null for trips made before AI courses */
   course: Place[][] | null;
   courseSource: CourseSource;
+  /** Chosen when the trip was made; used again when the owner asks the AI to redo the course */
+  companion: string | null;
+  interests: string[];
   /** True when the signed-in account created the trip; companions only see it */
   isOwner: boolean;
 };
@@ -23,7 +26,7 @@ type CourseJson = { places: Place[] }[];
 
 export const CURRENT_TRIP_COOKIE = "current_trip";
 
-const TRIP_COLUMNS = "id, user_id, start_date, end_date, budget_yen, course, course_source";
+const TRIP_COLUMNS = "id, user_id, start_date, end_date, budget_yen, course, course_source, companion, interests";
 
 /**
  * The trip the user is looking at: the one picked on the trip list (cookie),
@@ -74,6 +77,8 @@ type TripRow = {
   budget_yen: number | null;
   course: unknown;
   course_source: string;
+  companion: string | null;
+  interests: string[] | null;
 };
 
 function toTrip(data: TripRow, me: string | null): Trip {
@@ -86,6 +91,8 @@ function toTrip(data: TripRow, me: string | null): Trip {
     // An edited default course keeps source "default" but stores its places.
     course: stored ? stored.map((day) => day.places) : null,
     courseSource: data.course_source === "ai" ? "ai" : "default",
+    companion: data.companion,
+    interests: data.interests ?? [],
     isOwner: data.user_id === me,
   };
 }

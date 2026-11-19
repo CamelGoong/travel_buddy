@@ -5,7 +5,7 @@ import { RiArrowLeftSLine } from "@remixicon/react";
 import { AppShell, HomeLink, PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { formatKoreanDate } from "@/lib/tokyo-time";
@@ -23,18 +23,20 @@ import {
 import { getMembers } from "@/features/members/server";
 import { getDayExpenses, getSpentByDay } from "@/features/expenses/server";
 import { dayStage, RouteLine } from "@/features/route-line";
-import { dateOfDay, placesOfDay } from "@/features/trip";
+import { dateOfDay, OSAKA_SPOTS, placesOfDay } from "@/features/trip";
 
 import { summarizeBudget } from "../../budget";
 import { loadTripContext } from "../../context";
 import { SuggestionIsland } from "../../suggestion-island";
 import { loadIslandData } from "../../suggestions";
 import { recordExpense } from "./actions";
+import { PlacesEditor } from "./places-editor";
 import { ExpenseForm } from "./expense-form";
 
 export default async function DayPage({ params, searchParams }: PageProps<"/trip/day/[day]">) {
   const { day } = await params;
   const query = await searchParams;
+  const editing = (Array.isArray(query.edit) ? query.edit[0] : query.edit) === "1";
   const personFilter = Number(Array.isArray(query.person) ? query.person[0] : query.person) || null;
   const rawCategory = Array.isArray(query.cat) ? query.cat[0] : query.cat;
   const categoryFilter: ExpenseCategory | null = rawCategory ? parseCategory(rawCategory) : null;
@@ -114,10 +116,27 @@ export default async function DayPage({ params, searchParams }: PageProps<"/trip
     >
       <Card>
         <CardHeader>
-          <CardTitle>오늘 코스</CardTitle>
+          <CardTitle>{dayNumber === todayDay ? "오늘 코스" : `${dayNumber}일차 코스`}</CardTitle>
+          {trip.isOwner && (
+            <CardAction>
+              <Link
+                href={editing ? `/trip/day/${dayNumber}` : `/trip/day/${dayNumber}?edit=1`}
+                replace
+                className={buttonVariants({ variant: editing ? "default" : "ghost", size: "sm" })}
+              >
+                {editing ? "완료" : "편집"}
+              </Link>
+            </CardAction>
+          )}
         </CardHeader>
         <CardContent>
-          {places.length === 0 ? (
+          {editing && trip.isOwner ? (
+            <PlacesEditor
+              dayNumber={dayNumber}
+              places={places.map((p) => ({ name: p.name, time: p.time }))}
+              spots={OSAKA_SPOTS.filter((s) => !places.some((p) => p.name === s.name)).map((s) => ({ key: s.key, name: s.name }))}
+            />
+          ) : places.length === 0 ? (
             <p className="text-muted-foreground">자유 일정이에요. 마음 가는 대로!</p>
           ) : (
             <ol className="flex flex-col gap-3" data-testid="day-places">

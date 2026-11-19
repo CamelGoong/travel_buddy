@@ -16,7 +16,7 @@ import {
   DEFAULT_CHECKLIST,
 } from "@/features/checklist";
 import {
-  countTripsCreatedSince,
+  countAiRunsSince,
   dayCount,
   insertTrip,
   validateTripDates,
@@ -103,7 +103,7 @@ async function generateForTrip(
   prefs: ReturnType<typeof parsePreferences>,
 ): Promise<Generated> {
   const osakaMidnight = `${toTokyoNow(new Date()).date}T00:00:00+09:00`;
-  if ((await countTripsCreatedSince(osakaMidnight)) >= DAILY_LIMIT) {
+  if ((await countAiRunsSince(osakaMidnight)) >= DAILY_LIMIT) {
     return { course: null, suggestions: [], fallbackReason: "daily_limit" };
   }
 

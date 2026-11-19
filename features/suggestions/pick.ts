@@ -15,7 +15,8 @@ export type SuggestionKind =
 
 export type LocationPermission = "granted" | "denied" | "prompt" | "unknown";
 
-export type TimedPlace = LatLng & { name: string; time: string };
+export type TimedPlace = Partial<LatLng> & { name: string; time: string };
+const hasCoords = (p: Partial<LatLng>): p is LatLng => p.lat != null && p.lng != null;
 export type Spot = LatLng & { key: string; name: string };
 
 export type NearbySpot = Spot & { meters: number; walkMinutes: number };
@@ -90,7 +91,7 @@ function nextPlace(input: PickInput): Suggestion | null {
 
   if (input.location) {
     places.forEach((p, i) => {
-      if (i + 1 < places.length && distanceMeters(input.location!, p) <= ARRIVAL_RADIUS_M) {
+      if (i + 1 < places.length && hasCoords(p) && distanceMeters(input.location!, p) <= ARRIVAL_RADIUS_M) {
         candidates.push({ index: i + 1, trigger: "arrival" });
       }
     });
@@ -108,7 +109,7 @@ function nextPlace(input: PickInput): Suggestion | null {
       context: String(c.index),
       place,
       trigger: c.trigger,
-      estimate: input.location ? estimateTravel(distanceMeters(input.location, place)) : null,
+      estimate: input.location && hasCoords(place) ? estimateTravel(distanceMeters(input.location, place)) : null,
     };
   }
   return null;
@@ -119,7 +120,7 @@ function ticket(input: PickInput): Suggestion | null {
   for (const place of input.todayPlaces) {
     if (!input.ticketPlaceNames.has(place.name)) continue;
     if (input.resolvedToday.has(key("ticket", place.name))) continue;
-    if (distanceMeters(input.location, place) <= ARRIVAL_RADIUS_M) {
+    if (hasCoords(place) && distanceMeters(input.location, place) <= ARRIVAL_RADIUS_M) {
       return { kind: "ticket", context: place.name, place };
     }
   }

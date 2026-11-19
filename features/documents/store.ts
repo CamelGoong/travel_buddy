@@ -215,3 +215,18 @@ export async function signedUrlOf(fileId: number): Promise<string | null> {
   const signed = await supabase.storage.from(BUCKET).createSignedUrl(data.storage_path, 3600);
   return signed.data?.signedUrl ?? null;
 }
+
+/** Unlinks the signed-in person's tickets from places that left the course. */
+export async function unlinkTicketPlaces(tripId: number, placeNames: string[]): Promise<void> {
+  if (placeNames.length === 0) return;
+  const supabase = await createClient();
+  const me = await getUserId();
+  if (!me) return;
+  const { error } = await supabase
+    .from("document_files")
+    .update({ place_name: null })
+    .eq("trip_id", tripId)
+    .eq("user_id", me)
+    .in("place_name", placeNames);
+  if (error) throw error;
+}

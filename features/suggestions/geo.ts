@@ -34,10 +34,15 @@ export function formatEstimate(estimate: TravelEstimate): string {
 }
 
 /** Google Maps directions from the current location; no API key needed. */
-export function mapsDirectionsUrl(to: LatLng, mode: "transit" | "walking"): string {
+export function mapsDirectionsUrl(
+  to: Partial<LatLng> & { name?: string },
+  mode: "transit" | "walking",
+): string {
   const url = new URL("https://www.google.com/maps/dir/");
   url.searchParams.set("api", "1");
-  url.searchParams.set("destination", `${to.lat},${to.lng}`);
+  // A typed-in place has no coordinates: let the map app search its name.
+  const hasCoords = to.lat != null && to.lng != null;
+  url.searchParams.set("destination", hasCoords ? `${to.lat},${to.lng}` : `${to.name ?? ""} 오사카`);
   url.searchParams.set("travelmode", mode);
   return url.toString();
 }

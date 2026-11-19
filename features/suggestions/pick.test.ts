@@ -205,3 +205,23 @@ describe("document suggestions (trip-documents AC10–AC12)", () => {
     ).toBe("ticket");
   });
 });
+
+describe("places typed in without coordinates (trip-course-edit AC5)", () => {
+  it("opens a name search for directions and skips arrival detection", () => {
+    const url = new URL(mapsDirectionsUrl({ name: "이치란 라멘" }, "transit"));
+    expect(url.searchParams.get("destination")).toBe("이치란 라멘 오사카");
+    const typed = [
+      { name: "오사카성 천수각", time: "10:00", lat: 34.68731, lng: 135.52599 },
+      { name: "이치란 라멘", time: "12:30" },
+    ];
+    const s = pickSuggestion({
+      ...base,
+      todayPlaces: typed,
+      nowTime: "12:00",
+      permission: "granted",
+      location: { lat: 34.68731, lng: 135.52599 },
+      resolvedToday: new Set(["morning:", "expense:lunch", "expense:dinner"]),
+    });
+    expect(s).toMatchObject({ kind: "next_place", place: { name: "이치란 라멘" }, estimate: null });
+  });
+});
