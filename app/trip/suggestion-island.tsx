@@ -12,11 +12,13 @@ import {
   pickSuggestion,
   type Suggestion,
 } from "@/features/suggestions";
+import { formatYen } from "@/features/expenses";
 import { skyLabel, WeatherSummary } from "@/features/weather";
 
 import { recordExpenseFromPrompt, resolveSuggestion, togglePrepItem } from "./actions";
 import { CheckRow } from "./check-row";
 import { ExpenseForm } from "./day/[day]/expense-form";
+import type { BudgetSummary, TodayGuide } from "./budget";
 import type { IslandData } from "./suggestions";
 import { useLocation } from "./use-location";
 
@@ -45,6 +47,7 @@ export function SuggestionIsland({ data }: { data: IslandData }) {
         permission,
         resolvedToday: new Set(data.resolvedToday),
         lastNearbyAt: data.lastNearbyAt,
+        budgetAheadOfPace: data.budget?.aheadOfPace ?? false,
       }),
     [data, location, permission],
   );
@@ -103,6 +106,11 @@ export function SuggestionIsland({ data }: { data: IslandData }) {
               : "내일은 자유 일정이에요."}
           </p>
           <WeatherSummary forecast={e.forecast} />
+          {data.budget && data.budget.spentToday !== null && (
+            <p className="text-sm font-medium" data-testid="budget-line">
+              {budgetLine(data.budget.spentToday, data.budget.today)}
+            </p>
+          )}
           {e.prepItems.length > 0 ? (
             <FieldGroup className="gap-3" data-testid="prep-items">
               {e.prepItems.map((item) => (
@@ -198,6 +206,31 @@ export function SuggestionIsland({ data }: { data: IslandData }) {
       );
       break;
     }
+    case "budget_pace": {
+      const b = data.budget!;
+      body = (
+        <>
+          <ul className="flex flex-col gap-1 text-sm" data-testid="budget-by-day">
+            {b.byDay
+              .filter((d) => data.todayDay !== null && d.day <= data.todayDay)
+              .map((d) => (
+                <li key={d.day} className="flex justify-between gap-3">
+                  <span>{d.day}일차</span>
+                  <span className="tabular-nums">{formatYen(d.spent)}</span>
+                </li>
+              ))}
+          </ul>
+          <p className="text-sm text-muted-foreground">{paceDetail(b, data.todayDay!)}</p>
+          <Actions>
+            {later()}
+            <Button size="sm" onClick={() => resolve(suggestion)}>
+              확인했어요
+            </Button>
+          </Actions>
+        </>
+      );
+      break;
+    }
     case "location": {
       body = (
         <>
@@ -285,6 +318,14 @@ function describe(s: Suggestion, data: IslandData): { line: string; meta: string
       return s.context === "lunch"
         ? { line: "점심 먹었어요? 기록해 둘까요?", meta: "🍜 점심" }
         : { line: "저녁 먹었어요? 기록해 둘까요?", meta: "🍽️ 저녁" };
+    case "budget_pace": {
+      const b = data.budget;
+      if (!b || data.todayDay === null) return null;
+      return {
+        line: `예산을 좀 빨리 쓰고 있어요. ${paceShort(b, data.todayDay)} 볼까요?`,
+        meta: `💸 ${Math.round((b.spent / b.budgetYen) * 100)}%`,
+      };
+    }
     case "location":
       return { line: "근처 추천을 받으려면 위치가 필요해요. 켜 볼까요?", meta: "📍" };
   }
@@ -305,4 +346,33 @@ function PlaceList({ places }: { places: { name: string; time: string }[] }) {
       ))}
     </ul>
   );
+}
+
+/** Allowance for each remaining day from tomorrow, given what is left now. */
+function remainingPerDay(b: BudgetSummary, todayDay: number) {
+  const daysLeft = b.byDay.length - todayDay;
+  return daysLeft > 0 && b.remaining > 0 ? Math.floor(b.remaining / daysLeft) : null;
+}
+
+function paceShort(b: BudgetSummary, todayDay: number) {
+  const perDay = remainingPerDay(b, todayDay);
+  const daysLeft = b.byDay.length - todayDay;
+  if (b.remaining <= 0) return `벌써 ${formatYen(-b.remaining)} 넘었어요.`;
+  return perDay !== null ? `남은 ${daysLeft}일은 하루 약 ${formatYen(perDay)}이에요.` : "오늘이 마지막 날이에요.";
+}
+
+function paceDetail(b: BudgetSummary, todayDay: number) {
+  const used = Math.round((b.spent / b.budgetYen) * 100);
+  const elapsed = Math.round((todayDay / b.byDay.length) * 100);
+  return `여행 ${elapsed}%가 지났는데 예산은 ${used}%(${formatYen(b.spent)})를 썼어요. ${paceShort(b, todayDay)}`;
+}
+
+function budgetLine(spentToday: number, today: TodayGuide) {
+  if (today.kind === "allowance") {
+    return spentToday <= today.yen
+      ? `오늘 ${formatYen(spentToday)} 썼어요 · 하루 권장 ${formatYen(today.yen)} 안이에요 👍`
+      : `오늘 ${formatYen(spentToday)} 썼어요 · 하루 권장보다 ${formatYen(spentToday - today.yen)} 넘었어요 🫣`;
+  }
+  if (today.kind === "over") return `오늘 ${formatYen(spentToday)} 썼어요 · 예산을 ${formatYen(today.yen)} 넘었어요 🫣`;
+  return `오늘 ${formatYen(spentToday)} 썼어요`;
 }

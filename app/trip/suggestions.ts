@@ -6,6 +6,7 @@ import { getSuggestionRecords } from "@/features/suggestions/server";
 import { OSAKA_SPOTS, placesForDay, type Place } from "@/features/trip";
 import { outfitLine, type DailyForecast } from "@/features/weather";
 
+import type { BudgetSummary } from "./budget";
 import { loadForecast, type TripContext } from "./context";
 
 /** Everything the suggestion island needs to pick and render one suggestion. */
@@ -23,6 +24,7 @@ export type IslandData = {
   devLocation: DevLocation | null;
   morning: { places: Place[]; forecast: DailyForecast | null; outfit: string | null } | null;
   evening: { places: Place[]; forecast: DailyForecast | null; prepItems: PrepItem[] } | null;
+  budget: BudgetSummary | null;
 };
 
 /** Server-side part of the suggestions: records, briefings and weather when they may show. */
@@ -30,6 +32,7 @@ export async function loadIslandData(
   ctx: TripContext,
   checklist: ChecklistItem[],
   dayScreen: number | null,
+  budget: BudgetSummary | null,
 ): Promise<IslandData> {
   const { trip, now, todayDay, tomorrowDay, tomorrow } = ctx;
   const [records, devLocation] = await Promise.all([
@@ -59,6 +62,7 @@ export async function loadIslandData(
     resolvedToday: records.resolvedToday,
     lastNearbyAt: records.lastNearbyAt,
     devLocation,
+    budget,
     morning:
       morningDue && todayDay
         ? {

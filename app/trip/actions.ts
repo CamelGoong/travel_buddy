@@ -5,11 +5,12 @@ import { refresh } from "next/cache";
 import { getTokyoNow } from "@/lib/clock";
 import { addDays } from "@/lib/tokyo-time";
 import { setPrepCheck } from "@/features/briefing";
+import { parseBudget } from "@/features/budget";
 import { setChecklistItemDone } from "@/features/checklist";
 import { insertExpense, parseExpense } from "@/features/expenses";
 import type { SuggestionKind } from "@/features/suggestions";
 import { recordSuggestion } from "@/features/suggestions/server";
-import { dayNumberOn, getLatestTrip } from "@/features/trip";
+import { dayNumberOn, getLatestTrip, setTripBudget } from "@/features/trip";
 
 import type { ExpenseFormState } from "./day/[day]/actions";
 
@@ -62,4 +63,24 @@ export async function recordExpenseFromPrompt(
   }
   refresh();
   return { error: null, amount: "", label: "", saved: prev.saved + 1 };
+}
+
+export type BudgetFormState = { error: string | null; value: string };
+
+/** Sets the trip's total budget, or clears it when the clear button sent the form. */
+export async function saveBudget(_prev: BudgetFormState, formData: FormData): Promise<BudgetFormState> {
+  const raw = String(formData.get("budget") ?? "");
+  const trip = await getLatestTrip();
+  if (!trip) return { error: "여행을 찾지 못했어요.", value: raw };
+
+  if (formData.get("intent") === "clear") {
+    await setTripBudget(trip.id, null);
+    refresh();
+    return { error: null, value: "" };
+  }
+  const parsed = parseBudget(raw);
+  if (!parsed.ok) return { error: parsed.error, value: raw };
+  await setTripBudget(trip.id, parsed.yen);
+  refresh();
+  return { error: null, value: String(parsed.yen) };
 }

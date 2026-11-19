@@ -27,6 +27,7 @@ const base: PickInput = {
   permission: "denied",
   resolvedToday: new Set(["morning:"]),
   lastNearbyAt: null,
+  budgetAheadOfPace: false,
 };
 const resolved = (...keys: string[]) => new Set(["morning:", ...keys]);
 /** Meals already asked, so time-window tests see only the suggestion under test. */
@@ -151,5 +152,18 @@ describe("travel helpers", () => {
     const url = new URL(mapsDirectionsUrl({ lat: 34.67256, lng: 135.50146 }, "transit"));
     expect(url.searchParams.get("destination")).toBe("34.67256,135.50146");
     expect(url.searchParams.get("travelmode")).toBe("transit");
+  });
+});
+
+describe("budget pace (osaka-trip-budget AC7–AC9)", () => {
+  const paced = { ...base, onTodayDayScreen: false, nowTime: "11:00", budgetAheadOfPace: true };
+  it("asks once a day when spending runs ahead of the days", () => {
+    expect(pickSuggestion(paced)?.kind).toBe("budget_pace");
+    expect(pickSuggestion({ ...paced, resolvedToday: resolved("budget_pace:") })).toBeNull();
+    expect(pickSuggestion({ ...paced, budgetAheadOfPace: false })).toBeNull();
+  });
+  it("comes right after the meal prompt and before the location ask", () => {
+    expect(pickSuggestion({ ...paced, nowTime: "13:30" })?.kind).toBe("expense");
+    expect(pickSuggestion({ ...paced, onTodayDayScreen: true, permission: "prompt", resolvedToday: fed() })?.kind).toBe("budget_pace");
   });
 });

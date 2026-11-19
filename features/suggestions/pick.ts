@@ -2,7 +2,14 @@ import { distanceMeters, estimateTravel, walkingMinutes, type LatLng, type Trave
 
 // Which single proactive suggestion to show now (docs/specs/osaka-contextual-suggestions/).
 
-export type SuggestionKind = "morning" | "evening" | "next_place" | "expense" | "location" | "nearby";
+export type SuggestionKind =
+  | "morning"
+  | "evening"
+  | "next_place"
+  | "expense"
+  | "budget_pace"
+  | "location"
+  | "nearby";
 
 export type LocationPermission = "granted" | "denied" | "prompt" | "unknown";
 
@@ -22,6 +29,7 @@ export type Suggestion =
       trigger: "time" | "arrival";
     }
   | { kind: "expense"; context: "lunch" | "dinner" }
+  | { kind: "budget_pace"; context: "" }
   | { kind: "location"; context: "" }
   | { kind: "nearby"; context: string; spots: NearbySpot[] };
 
@@ -51,6 +59,8 @@ export type PickInput = {
   resolvedToday: ReadonlySet<string>;
   /** Osaka local 'YYYY-MM-DDTHH:MM' of the latest nearby resolution, if any */
   lastNearbyAt: string | null;
+  /** Budget spent share runs 15%p or more ahead of the elapsed days */
+  budgetAheadOfPace: boolean;
 };
 
 const key = (kind: SuggestionKind, context = "") => `${kind}:${context}`;
@@ -142,6 +152,10 @@ export function pickSuggestion(input: PickInput): Suggestion | null {
         return { kind: "expense", context: meal };
       }
     }
+  }
+
+  if (input.todayIsTripDay && input.budgetAheadOfPace && !done("budget_pace")) {
+    return { kind: "budget_pace", context: "" };
   }
 
   const locationMatters = input.onTodayDayScreen && input.todayPlaces.length > 0;

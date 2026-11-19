@@ -16,6 +16,19 @@ export async function getDayExpenses(tripId: number, dayNumber: number): Promise
   return data.map((row) => ({ id: row.id, amountYen: row.amount_yen, label: row.label }));
 }
 
+/** Total spent per day number for a trip. */
+export async function getSpentByDay(tripId: number): Promise<Record<number, number>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("expenses")
+    .select("day_number, amount_yen")
+    .eq("trip_id", tripId);
+  if (error) throw error;
+  const spent: Record<number, number> = {};
+  for (const row of data) spent[row.day_number] = (spent[row.day_number] ?? 0) + row.amount_yen;
+  return spent;
+}
+
 export async function insertExpense(
   tripId: number,
   dayNumber: number,

@@ -50,6 +50,20 @@ export function CreateTripForm({ defaultStart }: { defaultStart: string }) {
           <FieldDescription>최대 14일까지 만들 수 있어요.</FieldDescription>
           <FieldError>{state.error}</FieldError>
         </Field>
+        <Field data-invalid={!!state.budgetError || undefined}>
+          <FieldLabel htmlFor="budget">예산 (엔, 선택)</FieldLabel>
+          <Input
+            id="budget"
+            name="budget"
+            inputMode="numeric"
+            placeholder="80,000"
+            defaultValue={state.budget ?? ""}
+            key={`b-${state.budget ?? ""}`}
+            aria-invalid={!!state.budgetError || undefined}
+          />
+          <FieldDescription>여행 전체에 쓸 돈이에요. 나중에 정해도 돼요.</FieldDescription>
+          <FieldError>{state.budgetError}</FieldError>
+        </Field>
         <Button type="submit" size="lg" className="w-full" disabled={pending}>
           {pending ? "코스 짜는 중…" : "여행 만들기"}
         </Button>

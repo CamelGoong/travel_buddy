@@ -1,2 +1,2 @@
 export { formatYen, parseExpense, type ExpenseInput } from "./validate";
-export { getDayExpenses, insertExpense, type Expense } from "./store";
+export { getDayExpenses, getSpentByDay, insertExpense, type Expense } from "./store";

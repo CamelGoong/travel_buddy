@@ -10,4 +10,4 @@ export {
 } from "./trip-days";
 export { validateTripDates } from "./validate";
 export { getLatestTrip, type Trip } from "./queries";
-export { insertTrip } from "./mutations";
+export { insertTrip, setTripBudget } from "./mutations";
