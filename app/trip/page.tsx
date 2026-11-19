@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { RiArrowRightSLine, RiFolderLine } from "@remixicon/react";
+import { RiFolderLine } from "@remixicon/react";
 
 import { AppShell, HomeLink, PageHeader } from "@/components/app-shell";
+import { LinkArrow } from "@/components/link-pending";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -147,7 +148,7 @@ export default async function TripPage() {
                   </CardHeader>
                   <CardContent className="flex items-end justify-between gap-2">
                     <PlaceList places={day.places} />
-                    <RiArrowRightSLine className="shrink-0 text-muted-foreground" />
+                    <LinkArrow />
                   </CardContent>
                 </Card>
               </Link>
