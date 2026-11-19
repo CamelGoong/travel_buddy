@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { RiArrowRightSLine } from "@remixicon/react";
+import { RiArrowRightSLine, RiFolderLine } from "@remixicon/react";
 
-import { AppShell, PageHeader } from "@/components/app-shell";
+import { AppShell, HomeLink, PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { FieldGroup } from "@/components/ui/field";
 import { formatKoreanDate } from "@/lib/tokyo-time";
 import { LogoutButton } from "@/features/auth";
 import { getChecklist, getPendingSuggestions } from "@/features/checklist";
+import { getVault } from "@/features/documents/store";
 import { getSpentByDay } from "@/features/expenses/server";
 import { RouteLine, tripStage } from "@/features/route-line";
 import { buildCourse } from "@/features/trip";
@@ -26,11 +27,13 @@ export default async function TripPage() {
   const ctx = await loadTripContext();
   const { trip, now, days, todayDay } = ctx;
 
-  const [checklist, pending, spentByDay] = await Promise.all([
+  const [checklist, pending, spentByDay, vault] = await Promise.all([
     getChecklist(trip.id),
     getPendingSuggestions(trip.id),
     getSpentByDay(trip.id),
+    getVault(trip.id),
   ]);
+  const filledSlots = vault.filter((slot) => slot.files.length > 0).length;
   const budget = summarizeBudget({
     budgetYen: trip.budgetYen,
     dayCount: days,
@@ -56,7 +59,12 @@ export default async function TripPage() {
         </>
       }
       title="오사카 여행"
-      action={<LogoutButton />}
+      action={
+        <div className="flex items-center">
+          <HomeLink />
+          <LogoutButton />
+        </div>
+      }
     />
   );
 
@@ -99,6 +107,24 @@ export default async function TripPage() {
           </CardContent>
         )}
       </Card>
+
+      <Link
+        href="/trip/documents"
+        className="block rounded-xl focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+        data-testid="documents-card"
+      >
+        <Card size="sm" className="transition-colors hover:bg-muted/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RiFolderLine />
+              서류 보관함
+            </CardTitle>
+            <CardDescription>
+              {filledSlots}/{vault.length} 칸 채움 · 여권, 항공권을 올려 두면 필요할 때 바로 꺼내요
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </Link>
 
       <BudgetCard summary={budget} />
 
