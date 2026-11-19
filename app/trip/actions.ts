@@ -6,7 +6,11 @@ import { getTokyoNow } from "@/lib/clock";
 import { addDays } from "@/lib/tokyo-time";
 import { setPrepCheck } from "@/features/briefing";
 import { parseBudget } from "@/features/budget";
-import { setChecklistItemDone } from "@/features/checklist";
+import {
+  addSuggestionToChecklist,
+  dismissSuggestion,
+  setChecklistItemDone,
+} from "@/features/checklist";
 import { parseExpense } from "@/features/expenses";
 import { insertExpense } from "@/features/expenses/server";
 import type { SuggestionKind } from "@/features/suggestions";
@@ -17,6 +21,18 @@ import type { ExpenseFormState } from "./day/[day]/actions";
 
 export async function toggleChecklistItem(itemId: number, done: boolean) {
   await setChecklistItemDone(itemId, done);
+}
+
+/** "추가": the suggestion becomes an unchecked checklist item. */
+export async function acceptSuggestion(suggestionId: number) {
+  await addSuggestionToChecklist(suggestionId);
+  refresh();
+}
+
+/** "괜찮아요": the suggestion goes away and does not come back. */
+export async function dismissChecklistSuggestion(suggestionId: number) {
+  await dismissSuggestion(suggestionId);
+  refresh();
 }
 
 /** Checks an evening prep item; a checklist-derived item also updates the checklist. */
