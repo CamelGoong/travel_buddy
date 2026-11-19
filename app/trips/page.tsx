@@ -12,8 +12,6 @@ import { formatKoreanDate } from "@/lib/tokyo-time";
 import { LogoutButton } from "@/features/auth";
 import { dayCount, getCurrentTrip, listTrips } from "@/features/trip";
 
-import { openTrip } from "./actions";
-
 /** Home: all of the user's trips, with the current one marked, and a way to make another. */
 export default async function TripsPage() {
   if (!(await getUserId())) redirect("/auth/login?next=%2Ftrips");
@@ -39,11 +37,12 @@ export default async function TripsPage() {
               now.date < trip.startDate ? "출발 전" : now.date > trip.endDate ? "다녀옴" : "여행 중";
             return (
               <li key={trip.id}>
-                <form action={openTrip.bind(null, trip.id)}>
-                  <button
-                    type="submit"
-                    className="block w-full rounded-xl text-left focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-                  >
+                {/* prefetch off: opening the trip sets the "current trip" cookie */}
+                <Link
+                  href={`/trips/${trip.id}`}
+                  prefetch={false}
+                  className="block w-full rounded-xl text-left focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                >
                     <Card size="sm" className="transition-colors hover:bg-muted/50">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -59,8 +58,7 @@ export default async function TripsPage() {
                         <RiArrowRightSLine className="text-muted-foreground" />
                       </CardContent>
                     </Card>
-                  </button>
-                </form>
+                </Link>
               </li>
             );
           })}
