@@ -231,7 +231,7 @@ create policy "Members read shared trip documents" on storage.objects for select
     bucket_id = 'trip-documents'
     and exists (
       select 1 from public.document_files f
-      where f.storage_path = storage.objects.name and f.shared and public.is_trip_member(f.trip_id)
+      where f.storage_path = name and f.shared and public.is_trip_member(f.trip_id)
     )
   );
 
