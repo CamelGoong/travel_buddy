@@ -1,10 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-test("홈 화면이 열리고 시작 안내 제목이 보인다", async ({ page }) => {
-  await page.goto("/");
+test("로그인하지 않으면 여행 화면 대신 로그인 화면이 열린다", async ({ page }) => {
+  await page.goto("/trip");
 
-  await expect(page).toHaveTitle("Create Next App");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "To get started"
-  );
+  await expect(page).toHaveURL(/\/auth\/login/);
+  await expect(page).toHaveTitle("Travel Buddy");
+  await expect(page.getByRole("button", { name: "로그인" })).toBeVisible();
 });
