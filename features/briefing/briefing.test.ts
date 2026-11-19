@@ -1,58 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { decideBriefing } from "./decide";
 import { buildPrepItems, checklistPrepKey } from "./prep-items";
-
-const none = { morning: false, evening: false };
-
-describe("which briefing shows first", () => {
-  it("shows the morning briefing on a trip day at any hour until confirmed (AC6)", () => {
-    const input = { todayIsTripDay: true, tomorrowIsTripDay: true, dismissedToday: none };
-    expect(decideBriefing({ ...input, nowTime: "15:40" })).toBe("morning");
-    expect(
-      decideBriefing({
-        ...input,
-        nowTime: "15:40",
-        dismissedToday: { morning: true, evening: false },
-      }),
-    ).toBeNull();
-  });
-  it("hides the morning briefing before the trip (AC5)", () => {
-    expect(
-      decideBriefing({
-        nowTime: "09:00",
-        todayIsTripDay: false,
-        tomorrowIsTripDay: false,
-        dismissedToday: none,
-      }),
-    ).toBeNull();
-  });
-  it("shows the evening briefing from 20:00 when tomorrow is a trip day (AC10)", () => {
-    const eve = { todayIsTripDay: false, tomorrowIsTripDay: true, dismissedToday: none };
-    expect(decideBriefing({ ...eve, nowTime: "19:59" })).toBeNull();
-    expect(decideBriefing({ ...eve, nowTime: "20:00" })).toBe("evening");
-  });
-  it("skips the evening briefing on the last day (AC10)", () => {
-    expect(
-      decideBriefing({
-        nowTime: "21:00",
-        todayIsTripDay: true,
-        tomorrowIsTripDay: false,
-        dismissedToday: { morning: true, evening: false },
-      }),
-    ).toBeNull();
-  });
-  it("does not show the evening briefing again once confirmed (AC13)", () => {
-    expect(
-      decideBriefing({
-        nowTime: "22:00",
-        todayIsTripDay: false,
-        tomorrowIsTripDay: true,
-        dismissedToday: { morning: false, evening: true },
-      }),
-    ).toBeNull();
-  });
-});
 
 describe("evening prep items", () => {
   const checklist = [

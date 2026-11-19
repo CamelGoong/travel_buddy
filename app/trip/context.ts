@@ -6,6 +6,8 @@ import { addDays } from "@/lib/tokyo-time";
 import { dayCount, dayNumberOn, getLatestTrip } from "@/features/trip";
 import { fetchOsakaForecast } from "@/features/weather";
 
+export type TripContext = Awaited<ReturnType<typeof loadTripContext>>;
+
 /** Signed-in user's latest trip with "now" in Osaka local time. */
 export async function loadTripContext(nextPath = "/trip") {
   const userId = await getUserId();
