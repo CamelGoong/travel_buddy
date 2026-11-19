@@ -1,7 +1,6 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 import { CURRENT_TRIP_COOKIE } from "@/features/trip";
 
@@ -13,10 +12,4 @@ export async function rememberTrip(tripId: number) {
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 365,
   });
-}
-
-/** Opens a trip from the list. */
-export async function openTrip(tripId: number) {
-  await rememberTrip(tripId);
-  redirect("/trip");
 }
