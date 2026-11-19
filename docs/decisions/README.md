@@ -8,3 +8,4 @@
 - [data-storage](data-storage.md) — Read when storing user data or uploaded files, adding login, or deciding where trip data lives.
 - [dependency-versions](dependency-versions.md) — Read when upgrading dependencies, pinning versions, or wondering why TypeScript stays on 6.x.
 - [llm-integration](llm-integration.md) — Read when adding or changing LLM calls, choosing a model or provider, or deciding what is rule-based instead of AI-generated.
+- [visual-theme](visual-theme.md) — Read when changing the app-wide look: colors, glass surfaces, background, shapes, or fonts.

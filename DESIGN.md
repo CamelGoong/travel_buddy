@@ -39,6 +39,7 @@ Source: `components/ui/`. Update this section when it changes.
 
 - Custom markup for UI that shadcn already provides → [ui-composition](docs/decisions/ui-composition.md)
 - Per-screen arbitrary colors instead of semantic tokens → [ui-composition](docs/decisions/ui-composition.md)
+- Opaque white or dark single-color backgrounds, or text on a glass surface below 4.5:1 contrast → [visual-theme](docs/decisions/visual-theme.md)
 - Bottom floating pill as the only progress indicator → [route-line](docs/decisions/route-line.md)
 - Progress shown only as a scrolling vertical rail in the list → [route-line](docs/decisions/route-line.md)
 - Proactive suggestion shown first as a full card that takes over the screen → [suggestion-nudge](docs/decisions/suggestion-nudge.md)
@@ -47,5 +48,6 @@ Source: `components/ui/`. Update this section when it changes.
 ## Map
 
 - General controls, page shell, loading/empty/error states → [ui-composition](docs/decisions/ui-composition.md)
+- App-wide look: background, glass surfaces, colors, shapes, fonts → [visual-theme](docs/decisions/visual-theme.md)
 - Trip progress line at the top of the app → [route-line](docs/decisions/route-line.md)
 - Proactive suggestion island under the route line → [suggestion-nudge](docs/decisions/suggestion-nudge.md)
